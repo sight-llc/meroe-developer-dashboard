@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { loginDeveloper, logoutDeveloper, refreshSession, registerDeveloper } from './api'
+import { loginDeveloper, logoutDeveloper, refreshSession, registerDeveloper, ApiError } from './api'
 import { tokenStore } from './token-store'
 import type { AuthSession } from '@/types'
 
@@ -43,12 +43,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(s)
         setStatus('authenticated')
       })
-      .catch(() => {
-        // Refresh token invalid/expired — send to login
-        sessionStorage.removeItem(REFRESH_KEY)
-        sessionStorage.removeItem(SESSION_KEY)
-        tokenStore.clear()
-        setStatus('unauthenticated')
+      .catch((error) => {
+        // Only logout on auth errors (401/403) - server errors (5xx) should not log out user
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+          sessionStorage.removeItem(REFRESH_KEY)
+          sessionStorage.removeItem(SESSION_KEY)
+          tokenStore.clear()
+          setStatus('unauthenticated')
+        } else {
+          // For other errors (including 5xx), keep user in loading state
+          // The retry logic in refreshSession will handle 5xx errors
+          setStatus('unauthenticated')
+        }
       })
   }, [])
 

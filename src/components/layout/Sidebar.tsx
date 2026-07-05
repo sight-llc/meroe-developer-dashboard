@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { NAV_ITEMS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { Vault, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 
 export function Sidebar() {
@@ -16,9 +16,7 @@ export function Sidebar() {
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col bg-ink text-paper">
       <div className="flex items-center gap-2 px-5 py-5">
-        <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-vault-500">
-          <Vault className="h-4 w-4 text-paper" strokeWidth={2} />
-        </div>
+        <img src="/meroe-logo.svg" alt="Meroe" className="h-7 w-7" />
         <div className="leading-tight">
           <p className="font-display text-sm font-semibold tracking-tight">Meroe</p>
           <p className="text-[10px] uppercase tracking-wider text-paper/40">Developer</p>

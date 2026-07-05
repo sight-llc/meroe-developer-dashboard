@@ -50,11 +50,6 @@ export default function Login() {
         </>
       }
     >
-      {/* Demo hint — remove once real API is wired up */}
-      <div className="mb-5 rounded-sm border border-paper-200 bg-paper-100 px-3.5 py-2.5 text-xs text-ink-600/70">
-        <span className="font-medium text-ink">Demo:</span> use any email and any password
-        ≥ 4 characters.
-      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">

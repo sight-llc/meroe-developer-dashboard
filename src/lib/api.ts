@@ -60,12 +60,6 @@ export class ApiError extends Error {
   }
 }
 
-const MAX_RETRIES = 3
-
-function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms))
-}
-
 async function request<T>(path: string, init?: RequestInit, auth: 'jwt' | 'apikey' = 'jwt'): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -80,9 +74,36 @@ async function request<T>(path: string, init?: RequestInit, auth: 'jwt' | 'apike
     if (activeKey) headers['Authorization'] = `Bearer ${activeKey.rawKey}`
   }
 
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...init, credentials: 'include', headers,
+  })
+  if (res.ok) {
+    if (res.status === 204) return undefined as T
+    return res.json() as Promise<T>
+  }
+  const body = await res.json().catch(() => ({}))
+  throw new ApiError(
+    body.detail ?? body.message ?? `${res.status} ${res.statusText}`,
+    res.status, body.code ?? null, body.errors ?? null,
+  )
+}
+
+// ── Retry-aware fetch for refresh token (separate from main request) ─────────────
+const REFRESH_MAX_RETRIES = 3
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms))
+}
+
+async function requestWithRetry<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers as Record<string, string> | undefined),
+  }
+
   let lastError: Error = new Error('Request failed')
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt <= REFRESH_MAX_RETRIES; attempt++) {
     try {
       const res = await fetch(`${API_BASE_URL}${path}`, {
         ...init, credentials: 'include', headers,
@@ -104,7 +125,7 @@ async function request<T>(path: string, init?: RequestInit, auth: 'jwt' | 'apike
       if (e instanceof ApiError) throw e
       lastError = e instanceof Error ? e : new Error(String(e))
     }
-    if (attempt < MAX_RETRIES) await sleep(1000 * Math.pow(2, attempt))
+    if (attempt < REFRESH_MAX_RETRIES) await sleep(1000 * Math.pow(2, attempt))
   }
   throw lastError
 }
@@ -231,7 +252,7 @@ export async function loginDeveloper(input: { email: string; password: string })
 
 // POST /v1/developers/auth/refresh
 export async function refreshSession(refreshToken: string): Promise<AuthSession> {
-  const res = await request<{ accessToken: string; refreshToken: string; tokenType: string; expiresIn: number }>(
+  const res = await requestWithRetry<{ accessToken: string; refreshToken: string; tokenType: string; expiresIn: number }>(
     '/v1/developers/auth/refresh',
     { method: 'POST', body: JSON.stringify({ refreshToken }) },
   )

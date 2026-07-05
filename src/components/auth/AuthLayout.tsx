@@ -1,4 +1,3 @@
-import { Vault } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 interface AuthLayoutProps {
@@ -17,9 +16,7 @@ export function AuthLayout({ children, heading, subheading, footer }: AuthLayout
       {/* ── Left branding panel ────────────────────────────────────── */}
       <div className="hidden w-[420px] shrink-0 flex-col justify-between bg-ink px-10 py-12 lg:flex">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-vault-500">
-            <Vault className="h-4.5 w-4.5 text-white" strokeWidth={2} />
-          </div>
+          <img src="/meroe-logo.svg" alt="Meroe" className="h-8 w-8" />
           <span className="font-display text-base font-semibold text-paper">Meroe</span>
         </Link>
 
@@ -55,9 +52,7 @@ export function AuthLayout({ children, heading, subheading, footer }: AuthLayout
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
         {/* Mobile logo — only shown when the left panel is hidden */}
         <Link to="/" className="mb-8 flex items-center gap-2 lg:hidden">
-          <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-vault-500">
-            <Vault className="h-4 w-4 text-white" strokeWidth={2} />
-          </div>
+          <img src="/meroe-logo.svg" alt="Meroe" className="h-7 w-7" />
           <span className="font-display text-sm font-semibold text-ink">Meroe</span>
         </Link>
 
