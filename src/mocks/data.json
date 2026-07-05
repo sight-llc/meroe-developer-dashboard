@@ -1,0 +1,257 @@
+{
+  "developerProfile": {
+    "businessName": "Paystack Clone Ltd",
+    "email": "ops@paystackclone.dev",
+    "phone": "+234 802 411 7765",
+    "company": "Paystack Clone Ltd",
+    "kycStatus": "APPROVED",
+    "liveEnabled": true
+  },
+
+  "apps": [
+    {
+      "id": "app_01", "developerId": "dev_01", "name": "Checkout Engine",
+      "description": "Handles all customer collections for our e-commerce flow.",
+      "slug": "checkout-engine", "status": "ACTIVE", "environment": "live",
+      "createdAt": "2026-03-01T10:00:00Z"
+    },
+    {
+      "id": "app_02", "developerId": "dev_01", "name": "Savings Product",
+      "description": "Dedicated virtual accounts for our savings feature.",
+      "slug": "savings-product", "status": "ACTIVE", "environment": "live",
+      "createdAt": "2026-04-15T10:00:00Z"
+    },
+    {
+      "id": "app_03", "developerId": "dev_01", "name": "Staging Integration",
+      "description": "Sandbox testing environment.",
+      "slug": "staging-integration", "status": "ACTIVE", "environment": "sandbox",
+      "createdAt": "2026-03-01T10:00:00Z"
+    }
+  ],
+
+  "apiKeys": [
+    {
+      "id": "key_01", "appId": "app_01", "appName": "Checkout Engine",
+      "keyPrefix": "nv_live_sk_8a2f91c3", "lastFour": "4d9e",
+      "environment": "live",
+      "scopes": ["customers:read", "customers:write", "accounts:read", "transactions:read"],
+      "status": "ACTIVE", "createdAt": "2026-04-02T10:15:00Z", "revokedAt": null
+    },
+    {
+      "id": "key_02", "appId": "app_03", "appName": "Staging Integration",
+      "keyPrefix": "nv_test_sk_3f7c0d21", "lastFour": "a1b2",
+      "environment": "sandbox",
+      "scopes": ["customers:read", "customers:write", "accounts:read", "accounts:write",
+                 "transactions:read", "transfers:read", "transfers:write", "webhooks:manage"],
+      "status": "ACTIVE", "createdAt": "2026-03-11T09:00:00Z", "revokedAt": null
+    },
+    {
+      "id": "key_03", "appId": "app_02", "appName": "Savings Product",
+      "keyPrefix": "nv_live_sk_1d44ee90", "lastFour": "f3c8",
+      "environment": "live",
+      "scopes": ["reports:read", "transactions:read"],
+      "status": "REVOKED", "createdAt": "2026-02-18T14:30:00Z", "revokedAt": "2026-05-10T09:00:00Z"
+    }
+  ],
+
+  "webhookSubscriptions": [
+    {
+      "id": "wh_01", "url": "https://api.paystackclone.dev/webhooks/meroe",
+      "eventTypes": ["INBOUND_PAYMENT", "TRANSFER_SETTLEMENT", "TRANSFER_FAILED"],
+      "status": "ACTIVE", "environment": "live", "createdAt": "2026-04-02T10:20:00Z"
+    },
+    {
+      "id": "wh_02", "url": "https://staging.paystackclone.dev/hooks/meroe",
+      "eventTypes": ["INBOUND_PAYMENT", "ACCOUNT_SUSPENDED", "ACCOUNT_REACTIVATED"],
+      "status": "ACTIVE", "environment": "sandbox", "createdAt": "2026-03-11T09:10:00Z"
+    }
+  ],
+
+  "webhookDeliveries": [
+    { "id": "whd_01", "subscriptionId": "wh_01", "eventType": "INBOUND_PAYMENT", "status": "delivered", "attempts": 1, "responseCode": 200, "latencyMs": 184, "createdAt": "2026-06-20T07:42:05Z" },
+    { "id": "whd_02", "subscriptionId": "wh_01", "eventType": "TRANSFER_SETTLEMENT", "status": "delivered", "attempts": 1, "responseCode": 200, "latencyMs": 211, "createdAt": "2026-06-19T18:20:00Z" },
+    { "id": "whd_03", "subscriptionId": "wh_02", "eventType": "INBOUND_PAYMENT", "status": "failed", "attempts": 3, "responseCode": 503, "latencyMs": 4012, "createdAt": "2026-06-18T16:11:00Z" },
+    { "id": "whd_04", "subscriptionId": "wh_02", "eventType": "ACCOUNT_SUSPENDED", "status": "dead", "attempts": 5, "responseCode": 500, "latencyMs": null, "createdAt": "2026-06-17T12:05:00Z" }
+  ],
+
+  "customers": [
+    {
+      "id": "cus_01", "appId": "app_01", "externalRef": "psc_user_44291",
+      "fullName": "Adaeze Okonkwo", "email": "adaeze.okonkwo@gmail.com",
+      "phone": "+234 803 221 4490", "bvnMasked": "2234****890",
+      "nuban": "8821094473", "bankName": "Meroe MFB",
+      "virtualAccount": { "accountNumber": "8821094473", "bankName": "Meroe MFB", "accountName": "Adaeze Okonkwo", "status": "ACTIVE" },
+      "accountStatus": "ACTIVE", "kycTier": "TIER_2", "environment": "live",
+      "createdAt": "2026-03-14T08:00:00Z",
+      "events": [
+        { "id": "evt_101", "type": "CUSTOMER_CREATED", "payload": { "kycTier": "TIER_1" }, "createdAt": "2026-03-14T08:00:00Z" },
+        { "id": "evt_102", "type": "KYC_TIER_CHANGED", "payload": { "from": "TIER_1", "to": "TIER_2" }, "createdAt": "2026-04-20T13:12:00Z" },
+        { "id": "evt_103", "type": "NAME_CHANGED", "payload": { "from": "Adaeze Eze", "to": "Adaeze Okonkwo", "reason": "marriage" }, "createdAt": "2026-05-02T10:00:00Z" }
+      ]
+    },
+    {
+      "id": "cus_02", "appId": "app_01", "externalRef": "psc_user_18834",
+      "fullName": "Chinedu Maxwell", "email": "c.maxwell@outlook.com",
+      "phone": "+234 810 334 5521", "bvnMasked": "4411****223",
+      "nuban": "9034187722", "bankName": "Meroe MFB",
+      "virtualAccount": { "accountNumber": "9034187722", "bankName": "Meroe MFB", "accountName": "Chinedu Maxwell", "status": "ACTIVE" },
+      "accountStatus": "ACTIVE", "kycTier": "TIER_1", "environment": "live",
+      "createdAt": "2026-04-01T08:00:00Z",
+      "events": [
+        { "id": "evt_201", "type": "CUSTOMER_CREATED", "payload": { "kycTier": "TIER_1" }, "createdAt": "2026-04-01T08:00:00Z" }
+      ]
+    },
+    {
+      "id": "cus_03", "appId": "app_02", "externalRef": "psc_savings_00917",
+      "fullName": "Funmilayo Adeyemi", "email": "funmi.adeyemi@yahoo.com",
+      "phone": "+234 706 889 0012", "bvnMasked": "3305****117",
+      "nuban": "7715002298", "bankName": "Meroe MFB",
+      "virtualAccount": { "accountNumber": "7715002298", "bankName": "Meroe MFB", "accountName": "Funmilayo Adeyemi", "status": "SUSPENDED" },
+      "accountStatus": "SUSPENDED", "kycTier": "TIER_1", "environment": "live",
+      "createdAt": "2026-02-22T08:00:00Z",
+      "events": [
+        { "id": "evt_301", "type": "CUSTOMER_CREATED", "payload": { "kycTier": "TIER_1" }, "createdAt": "2026-02-22T08:00:00Z" },
+        { "id": "evt_302", "type": "ACCOUNT_SUSPENDED", "payload": { "reason": "manual review" }, "createdAt": "2026-06-05T12:00:00Z" }
+      ]
+    },
+    {
+      "id": "cus_04", "appId": "app_01", "externalRef": "psc_user_77712",
+      "fullName": "Tobenna Eke", "email": "tobenna.eke@gmail.com",
+      "phone": "+234 805 102 3344", "bvnMasked": "5567****441",
+      "nuban": "6603481150", "bankName": "Meroe MFB",
+      "virtualAccount": { "accountNumber": "6603481150", "bankName": "Meroe MFB", "accountName": "Tobenna Eke", "status": "ACTIVE" },
+      "accountStatus": "ACTIVE", "kycTier": "TIER_3", "environment": "live",
+      "createdAt": "2026-01-09T08:00:00Z",
+      "events": [
+        { "id": "evt_401", "type": "CUSTOMER_CREATED", "payload": { "kycTier": "TIER_2" }, "createdAt": "2026-01-09T08:00:00Z" },
+        { "id": "evt_402", "type": "KYC_TIER_CHANGED", "payload": { "from": "TIER_2", "to": "TIER_3" }, "createdAt": "2026-03-30T09:00:00Z" }
+      ]
+    },
+    {
+      "id": "cus_05", "appId": "app_03", "externalRef": "psc_sandbox_00001",
+      "fullName": "Halima Suleiman", "email": "halima.s@gmail.com",
+      "phone": "+234 901 445 6670", "bvnMasked": "6618****990",
+      "nuban": "9905519266", "bankName": "Sandbox Bank",
+      "virtualAccount": { "accountNumber": "9905519266", "bankName": "Sandbox Bank", "accountName": "Halima Suleiman", "status": "ACTIVE" },
+      "accountStatus": "ACTIVE", "kycTier": "TIER_1", "environment": "sandbox",
+      "createdAt": "2026-06-01T08:00:00Z",
+      "events": [
+        { "id": "evt_501", "type": "CUSTOMER_CREATED", "payload": { "kycTier": "TIER_1" }, "createdAt": "2026-06-01T08:00:00Z" }
+      ]
+    }
+  ],
+
+  "customerBalances": {
+    "cus_01": { "available": "284500.00", "spendable": "284500.00", "inflightDebit": "0.00", "currency": "NGN" },
+    "cus_02": { "available": "42300.00", "spendable": "42300.00", "inflightDebit": "0.00", "currency": "NGN" },
+    "cus_03": { "available": "0.00", "spendable": "0.00", "inflightDebit": "0.00", "currency": "NGN" },
+    "cus_04": { "available": "4820000.00", "spendable": "4790000.00", "inflightDebit": "30000.00", "currency": "NGN" },
+    "cus_05": { "available": "18000.00", "spendable": "18000.00", "inflightDebit": "0.00", "currency": "NGN" }
+  },
+
+  "customerTransactions": {
+    "cus_01": {
+      "content": [
+        { "transactionId": "txn_101", "reference": "NMB2026061901", "type": "INBOUND_PAYMENT", "direction": "CREDIT", "amount": "50000.00", "currency": "NGN", "balanceAfter": "284500.00", "status": "SETTLED", "occurredAt": "2026-06-19T11:02:00Z" },
+        { "transactionId": "txn_102", "reference": "NMB2026061201", "type": "INBOUND_PAYMENT", "direction": "CREDIT", "amount": "120000.00", "currency": "NGN", "balanceAfter": "234500.00", "status": "SETTLED", "occurredAt": "2026-06-12T09:40:00Z" },
+        { "transactionId": "txn_103", "reference": "FEE-txn_102", "type": "PLATFORM_FEE", "direction": "DEBIT", "amount": "150.00", "currency": "NGN", "balanceAfter": "234350.00", "status": "SETTLED", "occurredAt": "2026-06-12T09:40:05Z" }
+      ],
+      "page": 0, "size": 20, "totalElements": 3, "totalPages": 1
+    },
+    "cus_02": {
+      "content": [
+        { "transactionId": "txn_201", "reference": "NMB2026061001", "type": "INBOUND_PAYMENT", "direction": "CREDIT", "amount": "42300.00", "currency": "NGN", "balanceAfter": "42300.00", "status": "SETTLED", "occurredAt": "2026-06-10T15:20:00Z" }
+      ],
+      "page": 0, "size": 20, "totalElements": 1, "totalPages": 1
+    },
+    "cus_03": {
+      "content": [
+        { "transactionId": "txn_301", "reference": "NMB2026061801", "type": "INBOUND_PAYMENT", "direction": "CREDIT", "amount": "200000.00", "currency": "NGN", "balanceAfter": "0.00", "status": "MISDIRECTED", "occurredAt": "2026-06-18T08:14:00Z" }
+      ],
+      "page": 0, "size": 20, "totalElements": 1, "totalPages": 1
+    },
+    "cus_04": {
+      "content": [
+        { "transactionId": "txn_401", "reference": "NMB2026061701", "type": "INBOUND_PAYMENT", "direction": "CREDIT", "amount": "1000000.00", "currency": "NGN", "balanceAfter": "4820000.00", "status": "SETTLED", "occurredAt": "2026-06-17T10:00:00Z" },
+        { "transactionId": "txn_402", "reference": "TXF2026061601", "type": "OUTBOUND_TRANSFER", "direction": "DEBIT", "amount": "30000.00", "currency": "NGN", "balanceAfter": "3820000.00", "status": "PENDING", "occurredAt": "2026-06-16T10:00:00Z" }
+      ],
+      "page": 0, "size": 20, "totalElements": 2, "totalPages": 1
+    },
+    "cus_05": {
+      "content": [
+        { "transactionId": "txn_501", "reference": "NMB2026061901S", "type": "INBOUND_PAYMENT", "direction": "CREDIT", "amount": "18000.00", "currency": "NGN", "balanceAfter": "18000.00", "status": "MISDIRECTED", "occurredAt": "2026-06-19T19:00:00Z" }
+      ],
+      "page": 0, "size": 20, "totalElements": 1, "totalPages": 1
+    }
+  },
+
+  "reconciliation": {
+    "matched": 1842, "unmatched": 7, "misdirected": 4,
+    "misdirectedQueue": [
+      { "transactionId": "txn_501", "customerId": "cus_05", "customerName": "Halima Suleiman", "senderName": "Halima Suleyman", "senderBank": "GTB", "amount": "18000.00", "flagReason": "SENDER_NAME_MISMATCH", "detectedAt": "2026-06-19T19:00:00Z" },
+      { "transactionId": "txn_612", "customerId": "cus_02", "customerName": "Chinedu Maxwell", "senderName": "C. Maxwel", "senderBank": "Access Bank", "amount": "75000.00", "flagReason": "SENDER_NAME_MISMATCH", "detectedAt": "2026-06-18T14:22:00Z" },
+      { "transactionId": "txn_633", "customerId": "cus_01", "customerName": "Adaeze Okonkwo", "senderName": "Ojo Babatunde", "senderBank": "GTB", "amount": "299999.99", "flagReason": "AMOUNT_ANOMALY", "detectedAt": "2026-06-17T08:51:00Z" },
+      { "transactionId": "txn_640", "customerId": "cus_03", "customerName": "Funmilayo Adeyemi", "senderName": "Unknown Sender", "senderBank": "UBA", "amount": "200000.00", "flagReason": "ACCOUNT_SUSPENDED", "detectedAt": "2026-06-18T08:14:00Z" }
+    ]
+  },
+
+  "outboundTransfers": [
+    { "id": "ot_01", "appId": "app_01", "customerId": "cus_01", "sourceSubAccount": "VAULT", "amount": "50000.00", "fee": "50.00", "destinationAccountNumber": "0123456789", "destinationBankCode": "058", "destinationAccountName": "Adaeze Okonkwo", "narration": "Withdrawal request", "merchantTxRef": "tx_ref_001", "nombaTransferId": "NMB-TXF-001", "status": "COMPLETED", "environment": "live", "createdAt": "2026-06-18T10:00:00Z", "submittedAt": "2026-06-18T10:00:05Z", "completedAt": "2026-06-18T10:01:22Z", "failureReason": null },
+    { "id": "ot_02", "appId": "app_01", "customerId": null, "sourceSubAccount": "OPS", "amount": "120000.00", "fee": null, "destinationAccountNumber": "9876543210", "destinationBankCode": "011", "destinationAccountName": "Paystack Clone Ltd", "narration": "Revenue withdrawal", "merchantTxRef": "tx_ref_002", "nombaTransferId": "NMB-TXF-002", "status": "COMPLETED", "environment": "live", "createdAt": "2026-06-17T15:00:00Z", "submittedAt": "2026-06-17T15:00:08Z", "completedAt": "2026-06-17T15:02:10Z", "failureReason": null },
+    { "id": "ot_03", "appId": "app_01", "customerId": "cus_04", "sourceSubAccount": "VAULT", "amount": "30000.00", "fee": "30.00", "destinationAccountNumber": "1122334455", "destinationBankCode": "033", "destinationAccountName": "Tobenna Eke", "narration": "Payout", "merchantTxRef": "tx_ref_003", "nombaTransferId": null, "status": "PENDING", "environment": "live", "createdAt": "2026-06-20T08:00:00Z", "submittedAt": null, "completedAt": null, "failureReason": null },
+    { "id": "ot_04", "appId": "app_01", "customerId": "cus_02", "sourceSubAccount": "VAULT", "amount": "15000.00", "fee": "15.00", "destinationAccountNumber": "5544332211", "destinationBankCode": "058", "destinationAccountName": "Chinedu Maxwell", "narration": "Refund", "merchantTxRef": "tx_ref_004", "nombaTransferId": "NMB-TXF-004", "status": "FAILED", "environment": "live", "createdAt": "2026-06-16T12:00:00Z", "submittedAt": "2026-06-16T12:00:06Z", "completedAt": null, "failureReason": "INSUFFICIENT_BALANCE" }
+  ],
+
+  "apiLogs": [
+    { "id": "log_01", "method": "POST", "path": "/v1/customers", "statusCode": 201, "latencyMs": 142, "environment": "live", "timestamp": "2026-06-20T07:42:00Z", "requestBody": { "externalRef": "psc_user_44291", "fullName": "Adaeze Okonkwo" }, "responseBody": { "id": "cus_01", "nuban": "8821094473" } },
+    { "id": "log_02", "method": "GET", "path": "/v1/customers/cus_01", "statusCode": 200, "latencyMs": 38, "environment": "live", "timestamp": "2026-06-20T07:30:00Z", "requestBody": null, "responseBody": { "id": "cus_01" } },
+    { "id": "log_03", "method": "POST", "path": "/v1/transfers", "statusCode": 201, "latencyMs": 311, "environment": "live", "timestamp": "2026-06-20T08:00:10Z", "requestBody": { "sourceSubAccount": "VAULT", "destinationAccountNumber": "1122334455", "amount": 30000, "destinationAccountName": "Tobenna Eke" }, "responseBody": { "id": "ot_03", "status": "PENDING" } },
+    { "id": "log_04", "method": "POST", "path": "/v1/apps", "statusCode": 201, "latencyMs": 95, "environment": "live", "timestamp": "2026-06-19T19:00:00Z", "requestBody": { "name": "Savings Product" }, "responseBody": { "id": "app_02" } },
+    { "id": "log_05", "method": "GET", "path": "/v1/customers/cus_03/balance", "statusCode": 200, "latencyMs": 29, "environment": "live", "timestamp": "2026-06-18T08:14:30Z", "requestBody": null, "responseBody": { "available": "0.00", "spendable": "0.00", "inflightDebit": "0.00", "currency": "NGN" } },
+    { "id": "log_06", "method": "PUT", "path": "/v1/customers/cus_03/suspend", "statusCode": 200, "latencyMs": 88, "environment": "live", "timestamp": "2026-06-05T12:00:00Z", "requestBody": { "reason": "manual review" }, "responseBody": { "status": "SUSPENDED" } },
+    { "id": "log_07", "method": "GET", "path": "/v1/customers", "statusCode": 200, "latencyMs": 51, "environment": "live", "timestamp": "2026-06-16T10:00:00Z", "requestBody": null, "responseBody": { "count": 4 } },
+    { "id": "log_08", "method": "POST", "path": "/v1/transfers/ot_03/approve", "statusCode": 200, "latencyMs": 120, "environment": "live", "timestamp": "2026-06-20T09:00:00Z", "requestBody": null, "responseBody": { "status": "SUBMITTED" } },
+    { "id": "log_09", "method": "GET", "path": "/v1/apps", "statusCode": 200, "latencyMs": 22, "environment": "live", "timestamp": "2026-06-14T09:00:00Z", "requestBody": null, "responseBody": { "count": 3 } },
+    { "id": "log_10", "method": "POST", "path": "/v1/webhook-subscriptions", "statusCode": 201, "latencyMs": 67, "environment": "sandbox", "timestamp": "2026-06-13T17:40:00Z", "requestBody": { "url": "https://staging.paystackclone.dev/hooks/meroe", "eventTypes": ["INBOUND_PAYMENT"] }, "responseBody": { "id": "wh_02" } }
+  ],
+
+  "overviewStats": {
+    "totalCustomers": 1284, "totalTransactions": 9931,
+    "todaysVolumeNgn": "8420500.00", "webhookSuccessRate": 0.974, "apiErrorRate": 0.012
+  },
+
+  "volumeSeries30d": [
+    { "date": "2026-05-22", "volumeNgn": 4120000 }, { "date": "2026-05-23", "volumeNgn": 4380000 },
+    { "date": "2026-05-24", "volumeNgn": 3990000 }, { "date": "2026-05-25", "volumeNgn": 5210000 },
+    { "date": "2026-05-26", "volumeNgn": 5040000 }, { "date": "2026-05-27", "volumeNgn": 4870000 },
+    { "date": "2026-05-28", "volumeNgn": 5320000 }, { "date": "2026-05-29", "volumeNgn": 6010000 },
+    { "date": "2026-05-30", "volumeNgn": 5780000 }, { "date": "2026-05-31", "volumeNgn": 6230000 },
+    { "date": "2026-06-01", "volumeNgn": 5990000 }, { "date": "2026-06-02", "volumeNgn": 6410000 },
+    { "date": "2026-06-03", "volumeNgn": 6120000 }, { "date": "2026-06-04", "volumeNgn": 6580000 },
+    { "date": "2026-06-05", "volumeNgn": 7020000 }, { "date": "2026-06-06", "volumeNgn": 6890000 },
+    { "date": "2026-06-07", "volumeNgn": 7140000 }, { "date": "2026-06-08", "volumeNgn": 6760000 },
+    { "date": "2026-06-09", "volumeNgn": 7310000 }, { "date": "2026-06-10", "volumeNgn": 7580000 },
+    { "date": "2026-06-11", "volumeNgn": 7220000 }, { "date": "2026-06-12", "volumeNgn": 7690000 },
+    { "date": "2026-06-13", "volumeNgn": 8010000 }, { "date": "2026-06-14", "volumeNgn": 7450000 },
+    { "date": "2026-06-15", "volumeNgn": 7980000 }, { "date": "2026-06-16", "volumeNgn": 8230000 },
+    { "date": "2026-06-17", "volumeNgn": 8460000 }, { "date": "2026-06-18", "volumeNgn": 7990000 },
+    { "date": "2026-06-19", "volumeNgn": 8310000 }, { "date": "2026-06-20", "volumeNgn": 8420500 }
+  ],
+
+  "recentActivity": [
+    { "id": "log_01", "method": "POST", "path": "/v1/customers", "statusCode": 201, "timestamp": "2026-06-20T07:42:00Z" },
+    { "id": "log_03", "method": "POST", "path": "/v1/transfers", "statusCode": 201, "timestamp": "2026-06-20T08:00:10Z" },
+    { "id": "log_08", "method": "POST", "path": "/v1/transfers/ot_03/approve", "statusCode": 200, "timestamp": "2026-06-20T09:00:00Z" },
+    { "id": "log_02", "method": "GET", "path": "/v1/customers/cus_01", "statusCode": 200, "timestamp": "2026-06-20T07:30:00Z" },
+    { "id": "log_05", "method": "GET", "path": "/v1/customers/cus_03/balance", "statusCode": 200, "timestamp": "2026-06-18T08:14:30Z" },
+    { "id": "log_06", "method": "PUT", "path": "/v1/customers/cus_03/suspend", "statusCode": 200, "timestamp": "2026-06-05T12:00:00Z" },
+    { "id": "log_07", "method": "GET", "path": "/v1/customers", "statusCode": 200, "timestamp": "2026-06-16T10:00:00Z" },
+    { "id": "log_09", "method": "GET", "path": "/v1/apps", "statusCode": 200, "timestamp": "2026-06-14T09:00:00Z" }
+  ],
+
+  "sandboxHistory": [
+    { "id": "sim_01", "virtualAccountId": "cus_05", "customerName": "Halima Suleiman", "amount": "18000.00", "senderName": "Halima Suleyman", "senderBank": "GTB", "scenario": "sender_mismatch", "result": "MISDIRECTED", "createdAt": "2026-06-19T19:00:00Z" },
+    { "id": "sim_02", "virtualAccountId": "cus_05", "customerName": "Halima Suleiman", "amount": "5000.00", "senderName": "Halima Suleiman", "senderBank": "GTB", "scenario": "success", "result": "MATCHED", "createdAt": "2026-06-10T15:20:00Z" },
+    { "id": "sim_03", "virtualAccountId": "cus_05", "customerName": "Halima Suleiman", "amount": "10000.00", "senderName": "Halima Suleiman", "senderBank": "GTB", "scenario": "duplicate", "result": "DUPLICATE", "createdAt": "2026-06-08T12:00:00Z" }
+  ]
+}

@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-feature-settings: 'tnum' 1, 'cv05' 1;
+  }
+  .font-mono,
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply bg-white border border-paper-200 rounded-lg shadow-card;
+  }
+  .label-eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-wider text-ink-600/70;
+  }
+}
