@@ -3,10 +3,12 @@ import { NAV_ITEMS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
+import { activeKeyStore } from '@/lib/active-key-store'
 
 export function Sidebar() {
   const { logout, session } = useAuth()
   const navigate = useNavigate()
+  const activeKey = activeKeyStore.get()
 
   async function handleLogout() {
     await logout()
@@ -47,9 +49,15 @@ export function Sidebar() {
       <div className="border-t border-white/10 px-4 py-4 space-y-3">
         <div className="flex items-center justify-between text-[11px] text-paper/40">
           <span>Environment</span>
-          <span className="inline-flex items-center gap-1 rounded-sm bg-gold-400/10 px-1.5 py-0.5 font-mono text-gold-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-gold-400" />
-            live
+          <span className={`inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-mono text-xs ${
+            activeKey?.environment === 'live'
+              ? 'bg-gold-400/10 text-gold-400'
+              : 'bg-paper-100/10 text-paper/60'
+          }`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${
+              activeKey?.environment === 'live' ? 'bg-gold-400' : 'bg-paper-200'
+            }`} />
+            {activeKey?.environment ?? '—'}
           </span>
         </div>
 

@@ -7,10 +7,12 @@ import { getDeveloperProfile, getApiKeys } from '@/lib/api'
 import { activeKeyStore } from '@/lib/active-key-store'
 import type { DeveloperProfile, ApiKey } from '@/types'
 import { StatusBadge } from '@/components/shared/StatusBadge'
+import { SetActiveKeyModal } from '@/components/shared/SetActiveKeyModal'
 
 export function Topbar() {
   const location = useLocation()
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [setKeyModal, setSetKeyModal] = useState<ApiKey | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const { data: profile } = useQuery<DeveloperProfile>({
@@ -61,6 +63,11 @@ export function Topbar() {
             <span className="font-mono">
               {activeKey ? activeKeyStore.getLabel() : 'No API key'}
             </span>
+            {activeKey && (
+              <span className={`text-[10px] ${activeKey.environment === 'live' ? 'text-gold-600' : 'text-ink-600/60'}`}>
+                {activeKey.environment}
+              </span>
+            )}
             {!activeKey && <AlertCircle className="h-3 w-3 text-red-500" />}
             <ChevronDown className="h-3 w-3 opacity-60" />
           </button>
@@ -86,13 +93,7 @@ export function Topbar() {
                       <button
                         key={key.id}
                         onClick={() => {
-                          // Find the raw key — we need to match by id. Since rawKey is only available
-                          // at creation time, we store it when the user creates a key.
-                          // For existing keys, we can only select them if they were previously stored.
-                          // The full rawKey is stored in activeKeyStore when created.
-                          // For re-selection, we need to prompt or use a stored mapping.
-                          // For now, we'll just set the display info and the user will need to
-                          // have the raw key available from creation.
+                          setSetKeyModal(key)
                           setDropdownOpen(false)
                         }}
                         className={`flex w-full items-center gap-3 px-3 py-2 text-left text-xs transition-colors hover:bg-paper-100 ${
@@ -136,6 +137,14 @@ export function Topbar() {
           </>
         )}
       </div>
+
+      {setKeyModal && (
+        <SetActiveKeyModal
+          apiKey={setKeyModal}
+          onClose={() => setSetKeyModal(null)}
+          onSuccess={() => setSetKeyModal(null)}
+        />
+      )}
     </header>
   )
 }

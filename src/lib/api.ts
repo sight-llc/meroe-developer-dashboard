@@ -75,7 +75,7 @@ async function request<T>(path: string, init?: RequestInit, auth: 'jwt' | 'apike
   }
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...init, credentials: 'include', headers,
+    ...init, headers,
   })
   if (res.ok) {
     if (res.status === 204) return undefined as T
@@ -106,7 +106,7 @@ async function requestWithRetry<T>(path: string, init?: RequestInit): Promise<T>
   for (let attempt = 0; attempt <= REFRESH_MAX_RETRIES; attempt++) {
     try {
       const res = await fetch(`${API_BASE_URL}${path}`, {
-        ...init, credentials: 'include', headers,
+        ...init, headers,
       })
       if (res.ok) {
         if (res.status === 204) return undefined as T

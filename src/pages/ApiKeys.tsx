@@ -17,6 +17,7 @@ import { getApiKeys, createApiKey, revokeApiKey, rollApiKey, getApps } from '@/l
 import { activeKeyStore } from '@/lib/active-key-store'
 import { formatDate } from '@/lib/utils'
 import type { ApiKey, ApiKeyCreated, ApiScope, App } from '@/types'
+import { SetActiveKeyModal } from '@/components/shared/SetActiveKeyModal'
 
 // Only the two scopes confirmed working in the backend; others listed but gated
 const CONFIRMED_SCOPES: { scope: ApiScope; confirmed: boolean }[] = [
@@ -39,6 +40,7 @@ export default function ApiKeys() {
   const [createOpen, setCreateOpen] = useState(false)
   const [revealKey, setRevealKey] = useState<ApiKeyCreated | null>(null)
   const [confirmTarget, setConfirmTarget] = useState<{ id: string; action: 'revoke' | 'roll' } | null>(null)
+  const [setKeyModal, setSetKeyModal] = useState<ApiKey | null>(null)
 
   const { data: apps } = useQuery<App[]>({
     queryKey: ['apps'],
@@ -140,6 +142,13 @@ export default function ApiKeys() {
                     <div className="flex justify-end gap-1">
                       {key.status === 'ACTIVE' && (
                         <>
+                          <button
+                            onClick={() => setSetKeyModal(key)}
+                            className="rounded-sm p-1.5 text-ink-600/60 hover:bg-paper-100 hover:text-ink"
+                            title="Set as active"
+                          >
+                            <KeyRound className="h-3.5 w-3.5" />
+                          </button>
                           <button onClick={() => setConfirmTarget({ id: key.id, action: 'roll' })} className="rounded-sm p-1.5 text-ink-600/60 hover:bg-paper-100 hover:text-ink" title="Roll key">
                             <RefreshCcw className="h-3.5 w-3.5" />
                           </button>
@@ -195,6 +204,14 @@ export default function ApiKeys() {
         }}
         onClose={() => setConfirmTarget(null)}
       />
+
+      {setKeyModal && (
+        <SetActiveKeyModal
+          apiKey={setKeyModal}
+          onClose={() => setSetKeyModal(null)}
+          onSuccess={() => setSetKeyModal(null)}
+        />
+      )}
     </div>
   )
 }

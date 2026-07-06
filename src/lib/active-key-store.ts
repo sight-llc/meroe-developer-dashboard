@@ -52,4 +52,8 @@ export const activeKeyStore = {
     if (!_active) return null
     return `${_active.keyPrefix}••••${_active.lastFour}`
   },
+  /** Get the active key's environment */
+  getEnvironment: (): Environment | null => {
+    return _active?.environment ?? null
+  },
 }
