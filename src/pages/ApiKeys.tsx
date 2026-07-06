@@ -205,13 +205,14 @@ export default function ApiKeys() {
         onClose={() => setConfirmTarget(null)}
       />
 
-      {setKeyModal && (
-        <SetActiveKeyModal
-          apiKey={setKeyModal}
-          onClose={() => setSetKeyModal(null)}
-          onSuccess={() => setSetKeyModal(null)}
-        />
-      )}
+       {setKeyModal && (
+         <SetActiveKeyModal
+           apiKey={setKeyModal}
+           allApiKeys={keys ?? []}
+           onClose={() => setSetKeyModal(null)}
+           onSuccess={() => setSetKeyModal(null)}
+         />
+       )}
     </div>
   )
 }

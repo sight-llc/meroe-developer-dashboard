@@ -349,14 +349,14 @@ export async function revokeApiKey(id: string): Promise<void> {
 export async function rollApiKey(id: string): Promise<ApiKeyCreated> {
   const existing = (mock.apiKeys as ApiKey[]).find((k) => k.id === id)
   const prefix = `nv_test_sk_${Math.random().toString(16).slice(2, 10)}`
-  const lastFour = Math.random().toString(16).slice(2, 6)
+  const lastFour = Math.random().toString(16).slice(2, 6).padEnd(4, '0')
   return mockResolve({
     id, appId: existing?.appId ?? '', appName: existing?.appName,
     keyPrefix: prefix, lastFour,
     scopes: existing?.scopes ?? [], status: 'ACTIVE' as const,
     environment: existing?.environment ?? 'sandbox',
     createdAt: new Date().toISOString(), revokedAt: null,
-    rawKey: `${prefix}${Math.random().toString(16).slice(2, 34)}`,
+    rawKey: `${prefix}${(Math.random().toString(16) + '0000000000000000000').slice(2, 34)}`,
   }, 500)
 }
 

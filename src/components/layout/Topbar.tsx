@@ -88,7 +88,7 @@ export function Topbar() {
                   </p>
                 ) : (
                   activeKeys.map((key) => {
-                    const isActive = activeKey?.rawKey?.endsWith(key.lastFour) ?? false
+                    const isActive = activeKey?.rawKey?.startsWith(key.keyPrefix) ?? false
                     return (
                       <button
                         key={key.id}
@@ -138,13 +138,14 @@ export function Topbar() {
         )}
       </div>
 
-      {setKeyModal && (
-        <SetActiveKeyModal
-          apiKey={setKeyModal}
-          onClose={() => setSetKeyModal(null)}
-          onSuccess={() => setSetKeyModal(null)}
-        />
-      )}
+       {setKeyModal && (
+         <SetActiveKeyModal
+           apiKey={setKeyModal}
+           allApiKeys={apiKeys ?? []}
+           onClose={() => setSetKeyModal(null)}
+           onSuccess={() => setSetKeyModal(null)}
+         />
+       )}
     </header>
   )
 }

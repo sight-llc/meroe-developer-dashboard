@@ -12,11 +12,12 @@ import type { ApiKey } from '@/types'
 
 interface SetActiveKeyModalProps {
   apiKey: ApiKey
+  allApiKeys?: ApiKey[]
   onClose: () => void
   onSuccess: () => void
 }
 
-export function SetActiveKeyModal({ apiKey, onClose, onSuccess }: SetActiveKeyModalProps) {
+export function SetActiveKeyModal({ apiKey, allApiKeys, onClose, onSuccess }: SetActiveKeyModalProps) {
   const [rawKey, setRawKey] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -30,25 +31,33 @@ export function SetActiveKeyModal({ apiKey, onClose, onSuccess }: SetActiveKeyMo
       setError('Key is too short')
       return false
     }
-    // Extract last 4 characters and compare
-    const lastFour = input.slice(-4)
-    if (lastFour !== apiKey.lastFour) {
-      setError(`Key must end with "${apiKey.lastFour}"`)
-      return false
-    }
     return true
+  }
+
+  function findMatchingKey(input: string): ApiKey | undefined {
+    // Look up the key by prefix to get the correct lastFour and metadata
+    if (!allApiKeys) return undefined
+    return allApiKeys.find((k) => input.startsWith(k.keyPrefix))
   }
 
   function handleSetKey() {
     if (!validateKey(rawKey)) return
 
+    // Look up the matching key to get correct lastFour and metadata
+    const matchingKey = findMatchingKey(rawKey)
+    
+    if (!matchingKey) {
+      setError('Key not found. Please ensure you entered a valid key from your API keys list.')
+      return
+    }
+
     activeKeyStore.set({
       rawKey,
-      keyPrefix: apiKey.keyPrefix,
-      lastFour: apiKey.lastFour,
-      appName: apiKey.appName,
-      appId: apiKey.appId,
-      environment: apiKey.environment,
+      keyPrefix: matchingKey.keyPrefix,
+      lastFour: matchingKey.lastFour,
+      appName: matchingKey.appName,
+      appId: matchingKey.appId,
+      environment: matchingKey.environment,
     })
     onSuccess()
   }
