@@ -259,7 +259,7 @@ function CreateKeyModal({ apps, onClose, onCreated }: { apps: App[]; onClose: ()
                 <label key={scope} className="flex items-center gap-2 text-sm text-ink-600">
                   <input type="checkbox" checked={scopes.includes(scope)} onChange={() => toggleScope(scope)} className="h-3.5 w-3.5 rounded-sm accent-vault-600" />
                   <code className="font-mono text-xs">{scope}</code>
-                  {!confirmed && <span className="text-[10px] text-ink-600/40">(coming soon)</span>}
+                  {/* {!confirmed && <span className="text-[10px] text-ink-600/40">(coming soon)</span>} */}
                 </label>
               ))}
             </div>
