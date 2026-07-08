@@ -1,122 +1,157 @@
 # Meroe Developer Dashboard
 
-A Tremor + shadcn/ui-style developer dashboard for Meroe: apps, API keys,
-webhooks, customers & balances, the reconciliation board, outbound
-transfers, API logs, sandbox, and account settings. Built with Vite + React
-+ TypeScript + Tailwind + [`@tremor/react`](https://tremor.so) +
-Radix UI primitives.
+A Tremor + shadcn/ui-style developer dashboard for **Meroe** (formerly nombadva) — the embedded finance platform for building financial products. Built with Vite + React + TypeScript + Tailwind + [`@tremor/react`](https://tremor.so) + Radix UI primitives.
 
-Runs entirely on **mock data** — no backend required — so the UI and your
-team's Spring Boot work can move in parallel.
+The dashboard provides developers with a comprehensive interface to manage apps, API keys, webhooks, customers, balances, reconciliation, outbound transfers, API logs, sandbox testing, and account settings.
 
 ## Live deployment
 
 The dashboard is deployed at: [https://meroe-developer-dashboard.vercel.app/](https://meroe-developer-dashboard.vercel.app/)
 
+## About Meroe
+
+Meroe (formerly nombadva) is an embedded finance platform that enables developers to build financial products. For more context on Meroe's architecture and API design, see the main repository: [https://github.com/sight-llc/nombadva](https://github.com/sight-llc/nombadva)
+
 ## Getting started
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm or pnpm
+- A Meroe API key (for sandbox or production access)
+
+### Installation
 
 ```bash
 npm install
+```
+
+### Environment setup
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` to set your API base URL:
+
+```env
+# Base URL for the Meroe API
+VITE_API_BASE_URL=https://api.meroe.dev
+
+# Mock UI flag — controls coming-soon pages.
+# VITE_MOCK_UI=enabled  →  coming-soon pages render their full mock UI
+# (unset / anything else)  →  coming-soon pages show the "Coming soon" component
+#
+# Pages affected: Overview, Webhooks, Reconciliation, Transfers, API Logs, Settings
+# Always-live pages (no flag needed): Apps, API Keys, Customers, Customer Detail, Sandbox
+```
+
+### Development
+
+```bash
 npm run dev
 ```
 
-Opens on `http://localhost:5173`. You'll land on `/login` first — any email
-and a password ≥ 4 characters gets you in (see the demo hint on the login
-page).
+Opens on `http://localhost:5173`. You'll land on `/login` first.
+
+### Build
+
+```bash
+npm run build
+```
 
 ## Project structure
 
 ```
 src/
-  types/index.ts        # Domain types mirroring the architecture's DB schema
-  mocks/data.json         # All mock data, one file, one source of truth
+  types/index.ts        # Domain types mirroring the Meroe API schema
   lib/
-    api.ts                 # ⭐ the swap-in layer — see below
+    api.ts                 # ⭐ API layer — all backend calls go through here
     auth-context.tsx        # AuthProvider + useAuth() hook
-    utils.ts                  # formatting helpers (NGN currency, dates, %)
-    constants.ts               # sidebar nav config
+    token-store.ts           # JWT token management
+    active-key-store.ts      # Active API key management
+    features.ts              # Feature flags (VITE_MOCK_UI)
+    query-client.ts          # TanStack Query client configuration
+    utils.ts                 # formatting helpers (NGN currency, dates, %)
+    constants.ts             # sidebar nav config
   components/
     auth/                # AuthLayout, ProtectedRoute
     layout/                # Sidebar, Topbar, DashboardLayout shell
-    shared/                  # StatusBadge, EmptyState, ConfirmModal, CopyButton, etc.
-    ui/                        # shadcn/ui-style primitives (Button, Input, Select, Label)
+    shared/                # StatusBadge, EmptyState, ConfirmModal, CopyButton, etc.
+    ui/                  # shadcn/ui-style primitives (Button, Input, Select, Label)
   pages/
     auth/
       Login.tsx
       Register.tsx
       ForgotPassword.tsx
-    Overview.tsx           # F2a
-    Apps.tsx                 # Apps layer — namespace for keys/customers/webhooks
-    ApiKeys.tsx                # F2b — keys scoped to an App
-    Webhooks.tsx                 # F2c
-    Customers.tsx                  # F2d (list, filterable by App)
-    CustomerDetail.tsx               # F2d (detail — balances, transactions, events)
-    Reconciliation.tsx                 # F2e
-    Transfers.tsx                        # Outbound transfers (OPS/VAULT sub-accounts)
-    ApiLogs.tsx                            # F2f
-    Sandbox.tsx                              # F2g — CLI webhook simulator
-    Settings.tsx                               # F2h
+    Overview.tsx           # Dashboard overview with stats
+    Apps.tsx               # Apps management
+    ApiKeys.tsx            # API key management (scoped to apps)
+    Webhooks.tsx           # Webhook subscription management
+    Customers.tsx          # Customer list (filterable by app)
+    CustomerDetail.tsx     # Customer detail view (balances, transactions, events)
+    Reconciliation.tsx     # Reconciliation board
+    Transfers.tsx          # Outbound transfers
+    ApiLogs.tsx            # API request logs
+    Sandbox.tsx            # CLI webhook simulator
+    Settings.tsx           # Account settings
 ```
 
-## Auth
+## API Integration
 
-`AuthProvider` wraps the whole app and exposes `useAuth()` with
-`{ status, session, login, logout }`. `ProtectedRoute` redirects
-unauthenticated visitors to `/login`, preserving the page they were headed
-to so login sends them back.
+The dashboard is fully integrated with the Meroe API. All API calls are centralized in `src/lib/api.ts` — pages and components never call `fetch` directly.
 
-The mock session persists across page refresh via a `sessionStorage` flag
-(`meroe_mock_has_session`) — every spot using this is commented
-`// ← mock-only` in `auth-context.tsx` and should be deleted once the real
-`POST /v1/auth/refresh` endpoint sets an httpOnly cookie, which the browser
-will then send automatically.
+### Authentication
 
-## How to swap mock data for the real API
+The dashboard uses a dual authentication system:
 
-Everything lives in **`src/lib/api.ts`**. Every page calls a function from
-this file — never `fetch` directly — so this is the only file that needs to
-change.
-
-Each function already has its real call commented out directly above the
-mock line, e.g.:
+- **Developer JWT**: Used for authentication, app management, and developer profile operations
+- **API Key**: Used for customer and payment operations (scoped to specific apps)
 
 ```ts
-export async function getCustomers(params?: { appId?: string; search?: string; status?: string }): Promise<Customer[]> {
-  // return request(`/v1/customers?${new URLSearchParams(params).toString()}`)
-  return mockResolve(...)   // ← delete this line once the line above is uncommented
-}
+// JWT authentication (developer login/register)
+POST /v1/developers/auth/login
+POST /v1/developers/auth/register
+POST /v1/developers/auth/refresh
+
+// API key authentication (customer operations)
+// API keys are set as Bearer tokens in the Authorization header
 ```
 
-Steps:
+### API Endpoints
 
-1. Copy `.env.example` to `.env` and set `VITE_API_BASE_URL`.
-2. In `src/lib/api.ts`, for each function: delete the `mockResolve(...)`
-   line, uncomment the `request(...)` line above it.
-3. Once every function is swapped, delete `src/mocks/data.json` and the
-   `import mock from '@/mocks/data.json'` line at the top of `api.ts`.
-4. The `request()` helper sends `credentials: 'include'` for cookie-based
-   session auth — adjust if you're using bearer tokens instead.
+All endpoints are implemented and integrated:
 
-No page or component needs to change — they only ever import from
-`@/lib/api`, and every function's signature/return type matches the real
-endpoint contract from the architecture docs.
+| Category | Endpoints | Status |
+|----------|-----------|--------|
+| Auth | register, login, refresh | ✅ Live |
+| Apps | GET, POST, PATCH, DELETE | ✅ Live |
+| API Keys | GET, POST, DELETE, roll | ✅ Live |
+| Customers | GET, POST, PATCH, PUT (kyc/suspend/reactivate/close) | ✅ Live |
+| Webhooks | GET, POST, DELETE, test, deliveries | ✅ Live |
+| Transfers | GET, POST, approve, reject, reconcile, internal | ✅ Live |
+| Reconciliation | summary, misdirected-payments | ✅ Live |
+| API Logs | GET (filtered) | ✅ Live |
+| Sandbox | history | ✅ Live |
+| Settings | profile, transaction-pin, password | ✅ Live |
 
-## Notes on architecture alignment
+### Remaining Mocked Functions
 
-- **Apps layer**: customers, API keys, and webhook subscriptions are scoped
-  to an App (`Developer → Apps → Customers`), not directly to the developer.
-- **Balance fields**: the stored field is `available_balance` (not
-  `balance`). Two derived values are computed client-side for display:
-  `expected_balance = credit_balance − debit_balance` and
-  `withdrawable_balance = available_balance − inflight_debit_balance`.
-- **Sandbox**: there's no `/v1/sandbox/simulate/payment` REST endpoint in
-  the architecture — simulated payments are sent via a Python CLI
-  (`webhook_simulator.py`) posting to `/v1/webhooks/nomba` directly. The
-  Sandbox page reflects this: it builds and lets you copy the CLI command
-  rather than submitting a form to a nonexistent endpoint.
-- **Transfers**: the developer dashboard can initiate transfers and see
-  their status, but approval for above-threshold transfers (maker-checker)
-  happens on the separate Admin dashboard — not here.
+Two functions remain mocked as the backend endpoints are not yet available:
+
+- `initiateRefund(txId)` - POST /v1/transfers/{id}/refund
+- `uploadKycDocuments()` - POST /v1/developers/me/kyc-documents
+
+These are clearly marked in the code and will be swapped when the backend endpoints are ready.
+
+## Architecture notes
+
+- **Apps layer**: customers, API keys, and webhook subscriptions are scoped to an App (`Developer → Apps → Customers`), not directly to the developer.
+- **Balance fields**: the stored field is `available_balance` (not `balance`). Two derived values are computed client-side for display: `expected_balance = credit_balance − debit_balance` and `withdrawable_balance = available_balance − inflight_debit_balance`.
+- **Sandbox**: simulated payments are sent via a Python CLI (`webhook_simulator.py`) posting to `/v1/webhooks/nomba` directly. The Sandbox page builds and lets you copy the CLI command.
+- **Transfers**: the developer dashboard can initiate transfers and see their status, but approval for above-threshold transfers (maker-checker) happens on the separate Admin dashboard.
 
 ## Design tokens
 
@@ -128,6 +163,8 @@ Defined in `tailwind.config.ts`:
 - `gold` (#B9852E) — "unmatched" / live-environment / key-reveal accent
 - `misdirected` (#B3261E) — destructive / flagged state
 
-Typography: IBM Plex Sans (UI) + IBM Plex Mono (NUBANs, amounts, keys, JSON —
-anywhere exactness matters).
+Typography: IBM Plex Sans (UI) + IBM Plex Mono (NUBANs, amounts, keys, JSON — anywhere exactness matters).
 
+## License
+
+MIT
