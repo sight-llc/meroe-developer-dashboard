@@ -6,7 +6,6 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
-import { MockBadge } from '@/components/shared/MockBadge'
 import { CopyButton } from '@/components/shared/CopyButton'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -69,10 +68,7 @@ export default function Sandbox() {
         description="Simulated inbound payments are triggered from your machine via the Meroe CLI webhook simulator — it posts directly to /v1/webhooks/nomba, exercising the same reconciliation and ledger logic as a real Nomba payment."
       />
 
-      <div className="mb-4 flex items-center gap-2">
-        <MockBadge />
-        <span className="text-xs text-ink-600/50">Sandbox history is simulated — no backend endpoint yet</span>
-      </div>
+      {/* Data is now live from backend */}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Builder */}

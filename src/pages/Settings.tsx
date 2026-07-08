@@ -1,17 +1,15 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card } from '@tremor/react'
-import { ShieldCheck, Upload, Settings as SettingsIcon } from 'lucide-react'
+import { ShieldCheck, Upload, KeyRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader, Spinner } from '@/components/shared/PageHeader'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
-import { MockBadge } from '@/components/shared/MockBadge'
-import { FeaturePage } from '@/components/shared/FeaturePage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { getDeveloperProfile, updateDeveloperProfile, uploadKycDocuments, changePassword } from '@/lib/api'
+import { getDeveloperProfile, updateDeveloperProfile, uploadKycDocuments, changePassword, setTransactionPin } from '@/lib/api'
 import type { DeveloperProfile } from '@/types'
 
 function SettingsContent() {
@@ -67,6 +65,19 @@ function SettingsContent() {
     onError: (e) => toast.error(e instanceof Error ? e.message : 'Failed to update password'),
   })
 
+  const [pin, setPin] = useState(['', '', '', ''])
+  const [pinPassword, setPinPassword] = useState('')
+
+  const pinMutation = useMutation({
+    mutationFn: () => setTransactionPin(pin.join(''), pinPassword),
+    onSuccess: () => {
+      setPin(['', '', '', ''])
+      setPinPassword('')
+      toast.success('Transaction PIN set')
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Failed to set PIN'),
+  })
+
   const stateNode = <ApiStateDisplay loading={isLoading} error={error?.message ?? null} retry={refetch} />
   if (isLoading || error || !profile) return stateNode
 
@@ -96,10 +107,7 @@ function SettingsContent() {
     <div className="max-w-3xl">
       <PageHeader eyebrow="Account" title="Settings" description="Business profile, verification, and security." />
 
-      <div className="mb-4 flex items-center gap-2">
-        <MockBadge />
-        <span className="text-xs text-ink-600/50">Backend profile endpoints not yet available — data is simulated</span>
-      </div>
+      {/* Data is now live from backend */}
 
       <div className="space-y-5">
         <Card className="panel !p-5">
@@ -162,29 +170,66 @@ function SettingsContent() {
             </div>
           </form>
         </Card>
+
+        <Card className="panel !p-5">
+          <div className="flex items-center gap-2">
+            <KeyRound className="h-4 w-4 text-ink-600/60" />
+            <p className="label-eyebrow">Transaction PIN</p>
+          </div>
+          <p className="mt-1 text-sm text-ink-600/70">4-digit PIN for authorising money-out (payouts, refunds). Required for live environment.</p>
+          <div className="mt-4 space-y-3.5">
+            <div className="space-y-1.5">
+              <Label>4-digit PIN</Label>
+              <div className="flex gap-2">
+                {pin.map((digit, i) => (
+                  <Input
+                    key={i}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '')
+                      if (val.length > 1) return
+                      const newPin = [...pin]
+                      newPin[i] = val
+                      setPin(newPin)
+                      if (val && i < 3) {
+                        const nextInput = e.currentTarget.parentElement?.children[i + 1]?.querySelector('input')
+                        nextInput?.focus()
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace' && !pin[i] && i > 0) {
+                        const prevInput = e.currentTarget.parentElement?.children[i - 1]?.querySelector('input')
+                        prevInput?.focus()
+                      }
+                    }}
+                    className="h-12 w-12 text-center font-mono text-lg"
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pin-password">Current password (to confirm)</Label>
+              <Input id="pin-password" type="password" value={pinPassword} onChange={(e) => setPinPassword(e.target.value)} placeholder="Enter your login password" />
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              disabled={pinMutation.isPending || pin.join('').length !== 4 || !pinPassword}
+              onClick={() => pinMutation.mutate()}
+            >
+              {pinMutation.isPending && <Spinner className="h-3.5 w-3.5 text-white" />}
+              Set transaction PIN
+            </Button>
+          </div>
+        </Card>
       </div>
     </div>
   )
 }
 
 export default function Settings() {
-  return (
-    <FeaturePage
-      feature="MOCK_UI"
-      comingSoon={{
-        icon: SettingsIcon,
-        title: 'Account Settings',
-        description: 'Manage your developer profile, KYC verification status, live environment access, and security settings.',
-        features: [
-          'Business profile and contact info',
-          'KYC status and document upload',
-          'Live environment toggle (requires approved KYC)',
-          'Password change',
-        ],
-        eta: 'Phase 2 — developer profile endpoint',
-      }}
-    >
-      <SettingsContent />
-    </FeaturePage>
-  )
+  return <SettingsContent />
 }

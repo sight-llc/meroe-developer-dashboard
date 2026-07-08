@@ -1,11 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { Card, AreaChart } from '@tremor/react'
-import { Users, ArrowLeftRight, Wallet, Webhook, AlertCircle, LayoutDashboard } from 'lucide-react'
+import { Users, ArrowLeftRight, Wallet, Webhook, AlertCircle } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
-import { MockBadge } from '@/components/shared/MockBadge'
-import { FeaturePage } from '@/components/shared/FeaturePage'
 import { getOverviewStats, getVolumeSeries, getRecentActivity } from '@/lib/api'
 import { formatCompactNgn, formatDateTime, formatPercent } from '@/lib/utils'
 import type { OverviewStats, RecentActivityItem, VolumePoint } from '@/types'
@@ -78,10 +76,7 @@ function OverviewContent() {
         description="Your account's traffic, volume, and delivery health at a glance."
       />
 
-      <div className="mb-4 flex items-center gap-2">
-        <MockBadge />
-        <span className="text-xs text-ink-600/50">Backend analytics endpoints not yet available — data is simulated</span>
-      </div>
+      {/* Data is now live from backend */}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Kpi icon={Users} label="Total customers" value={(stats?.totalCustomers ?? 0).toLocaleString()} />
@@ -137,25 +132,5 @@ function OverviewContent() {
 }
 
 export default function Overview() {
-  return (
-    <FeaturePage
-      feature="MOCK_UI"
-      comingSoon={{
-        icon: LayoutDashboard,
-        title: 'Platform Overview',
-        description:
-          'A real-time snapshot of your transaction volume, customer growth, webhook health, and API error rate.',
-        features: [
-          '30-day inbound volume area chart',
-          'KPI cards: customers, transactions, daily volume',
-          'Webhook delivery success rate',
-          'API error rate monitoring',
-          'Recent API activity feed',
-        ],
-        eta: 'Phase 2 — backend analytics endpoints',
-      }}
-    >
-      <OverviewContent />
-    </FeaturePage>
-  )
+  return <OverviewContent />
 }

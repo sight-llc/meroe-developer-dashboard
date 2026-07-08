@@ -8,7 +8,6 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { FeaturePage } from '@/components/shared/FeaturePage'
 import { NoApiKey } from '@/components/shared/NoApiKey'
 import { RequireApiKeyModal } from '@/components/shared/RequireApiKeyModal'
 import { Button } from '@/components/ui/button'
@@ -360,24 +359,5 @@ function TransferFormModal({ apps, onClose, onCreated }: {
 }
 
 export default function Transfers() {
-  return (
-    <FeaturePage
-      feature="MOCK_UI"
-      comingSoon={{
-        icon: ArrowUpRight,
-        title: 'Outbound Transfers',
-        description: 'Initiate customer withdrawals from VAULT and revenue payouts from OPS to external Nigerian bank accounts. Approve or reject pending transfers directly from the dashboard.',
-        features: [
-          'VAULT: customer withdrawal to any NUBAN',
-          'OPS: revenue payout to your own bank account',
-          'Approve / Reject pending transfers (JWT — dashboard only)',
-          'Transfer status tracking (PENDING → SUBMITTED → COMPLETED)',
-          'Fee tracking and Nomba transfer reference',
-        ],
-        eta: 'Phase 3 — NV-405 business logic',
-      }}
-    >
-      <TransfersContent />
-    </FeaturePage>
-  )
+  return <TransfersContent />
 }

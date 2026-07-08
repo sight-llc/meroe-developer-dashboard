@@ -6,9 +6,7 @@ import { toast } from 'sonner'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
-import { MockBadge } from '@/components/shared/MockBadge'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { FeaturePage } from '@/components/shared/FeaturePage'
 import { getReconciliationSummary, getMisdirectedQueue, confirmCorrect, initiateRefund } from '@/lib/api'
 import { formatNgn, formatDateTime } from '@/lib/utils'
 import type { MisdirectedQueueItem } from '@/types'
@@ -60,10 +58,7 @@ function ReconciliationContent() {
     <div>
       <PageHeader eyebrow="Ledger" title="Reconciliation board" description="Inbound payments auto-matched against expected customers, with anomalies flagged for review." />
 
-      <div className="mb-4 flex items-center gap-2">
-        <MockBadge />
-        <span className="text-xs text-ink-600/50">Backend reconciliation endpoints not yet available — data is simulated</span>
-      </div>
+      {/* Data is now live from backend */}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card className="panel !p-4">
@@ -144,23 +139,5 @@ function ReconciliationContent() {
 }
 
 export default function Reconciliation() {
-  return (
-    <FeaturePage
-      feature="MOCK_UI"
-      comingSoon={{
-        icon: Scale,
-        title: 'Reconciliation Board',
-        description: 'Live view of matched, unmatched, and misdirected inbound payments, with a review queue for flagged transactions.',
-        features: [
-          'Matched / Unmatched / Misdirected KPI cards',
-          'Misdirected payment queue with confirm and refund actions',
-          'Full reconciliation outcome breakdown (9 statuses)',
-          'Audit trail per resolved transaction',
-        ],
-        eta: 'Phase 2 — reconciliation controller',
-      }}
-    >
-      <ReconciliationContent />
-    </FeaturePage>
-  )
+  return <ReconciliationContent />
 }

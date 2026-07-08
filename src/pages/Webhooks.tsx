@@ -7,7 +7,6 @@ import { PageHeader, Spinner } from '@/components/shared/PageHeader'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
-import { MockBadge } from '@/components/shared/MockBadge'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { Button } from '@/components/ui/button'
 import { CopyButton } from '@/components/shared/CopyButton'
@@ -313,14 +312,12 @@ function DeliveryLogsDrawer({ subscription, onClose }: { subscription: WebhookSu
                     <code className="font-mono text-xs text-ink">{d.eventType}</code>
                     <StatusBadge status={d.status} />
                   </div>
-                  <div className="mt-1.5 flex items-center justify-between text-[11px] text-ink-600/60">
-                    <span>{formatDateTime(d.createdAt)}</span>
-                    <span>
-                      {d.attempts} attempt{d.attempts > 1 ? 's' : ''}
-                      {d.responseCode != null ? ` · ${d.responseCode}` : ''}
-                      {d.latencyMs != null ? ` · ${d.latencyMs}ms` : ''}
-                    </span>
-                  </div>
+          <div className="mt-1.5 flex items-center justify-between text-[11px] text-ink-600/60">
+            <span>{formatDateTime(d.createdAt)}</span>
+            <span>
+              {d.attemptCount} attempt{d.attemptCount > 1 ? 's' : ''}
+            </span>
+          </div>
                 </li>
               ))}
             </ul>

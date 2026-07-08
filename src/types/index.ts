@@ -84,8 +84,9 @@ export interface WebhookDelivery {
   id: string
   subscriptionId: string
   eventType: string
-  status: 'delivered' | 'failed' | 'dead'
-  attempts: number
+  status: 'PENDING' | 'SENDING' | 'DELIVERED' | 'DEAD'
+  attemptCount: number
+  nextRetryAt?: string
   responseCode: number | null
   latencyMs: number | null
   createdAt: string
