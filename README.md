@@ -9,6 +9,10 @@ Radix UI primitives.
 Runs entirely on **mock data** — no backend required — so the UI and your
 team's Spring Boot work can move in parallel.
 
+## Live deployment
+
+The dashboard is deployed at: [https://meroe-developer-dashboard.vercel.app/](https://meroe-developer-dashboard.vercel.app/)
+
 ## Getting started
 
 ```bash
