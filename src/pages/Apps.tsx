@@ -7,7 +7,6 @@ import { PageHeader, Spinner } from '@/components/shared/PageHeader'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
-import { MockBadge } from '@/components/shared/MockBadge'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -98,7 +97,6 @@ export default function Apps() {
               <div className="flex items-center justify-between border-t border-paper-200 pt-3">
                 <p className="text-xs text-ink-600/50">Created {formatDate(app.createdAt)}</p>
                 <div className="flex items-center gap-1.5">
-                  <MockBadge />
                   <button onClick={() => setEditTarget(app)} className="rounded-sm p-1.5 text-ink-600/50 hover:bg-paper-100 hover:text-ink" title="Rename">
                     <Pencil className="h-3.5 w-3.5" />
                   </button>

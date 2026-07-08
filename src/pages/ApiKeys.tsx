@@ -7,7 +7,6 @@ import { PageHeader, Spinner } from '@/components/shared/PageHeader'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
-import { MockBadge } from '@/components/shared/MockBadge'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { CopyButton } from '@/components/shared/CopyButton'
 import { Button } from '@/components/ui/button'
@@ -259,7 +258,7 @@ function CreateKeyModal({ apps, onClose, onCreated }: { apps: App[]; onClose: ()
                 <label key={scope} className="flex items-center gap-2 text-sm text-ink-600">
                   <input type="checkbox" checked={scopes.includes(scope)} onChange={() => toggleScope(scope)} className="h-3.5 w-3.5 rounded-sm accent-vault-600" />
                   <code className="font-mono text-xs">{scope}</code>
-                  {!confirmed && <span className="text-[10px] text-ink-600/40">(coming soon)</span>}
+                  {/* {!confirmed && <span className="text-[10px] text-ink-600/40">(coming soon)</span>} */}
                 </label>
               ))}
             </div>

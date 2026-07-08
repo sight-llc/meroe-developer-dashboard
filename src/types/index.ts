@@ -84,8 +84,9 @@ export interface WebhookDelivery {
   id: string
   subscriptionId: string
   eventType: string
-  status: 'delivered' | 'failed' | 'dead'
-  attempts: number
+  status: 'PENDING' | 'SENDING' | 'DELIVERED' | 'DEAD'
+  attemptCount: number
+  nextRetryAt?: string
   responseCode: number | null
   latencyMs: number | null
   createdAt: string
@@ -216,11 +217,14 @@ export interface ApiLogEntry {
 
 // ── Overview ──────────────────────────────────────────────────────────────
 export interface OverviewStats {
-  totalCustomers: number
-  totalTransactions: number
-  todaysVolumeNgn: string
-  webhookSuccessRate: number
-  apiErrorRate: number
+  customers: number
+  apps: number
+  activeApiKeys: number
+  activeWebhookSubscriptions: number
+  inboundCount: number
+  inboundVolume: string
+  payoutCount: number
+  payoutVolume: string
 }
 
 export interface VolumePoint {
@@ -229,11 +233,12 @@ export interface VolumePoint {
 }
 
 export interface RecentActivityItem {
-  id: string
-  method: string
-  path: string
-  statusCode: number
-  timestamp: string
+  occurredAt: string
+  kind: 'PAYOUT' | 'INBOUND'
+  counterparty: string
+  narration: string
+  amount: number
+  status: string
 }
 
 // ── Sandbox ───────────────────────────────────────────────────────────────

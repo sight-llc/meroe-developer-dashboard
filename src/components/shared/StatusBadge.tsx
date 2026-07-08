@@ -22,14 +22,14 @@ const STATUS_TONE_MAP: Record<string, Tone> = {
   PROVISIONING: 'unmatched', EXPIRED: 'neutral', FAILED: 'danger',
   // KYC
   APPROVED: 'matched', REJECTED: 'danger',
-  // Webhook delivery
-  delivered: 'matched', failed: 'unmatched', dead: 'danger',
+  // Webhook delivery (uppercase — real backend)
+  PENDING: 'unmatched', SENDING: 'unmatched', DELIVERED: 'matched', DEAD: 'danger',
   // API key status (uppercase — real backend)
   REVOKED: 'danger', ROLLING: 'unmatched',
   // Webhook subscription status (uppercase)
   PAUSED: 'neutral',
   // Transfer / transaction status
-  PENDING: 'unmatched', SUBMITTED: 'unmatched', COMPLETED: 'matched', SETTLED: 'matched',
+  SUBMITTED: 'unmatched', COMPLETED: 'matched', SETTLED: 'matched',
   // App status
   INACTIVE: 'neutral',
 }
@@ -39,7 +39,7 @@ export function StatusBadge({ status, label }: { status: string; label?: string 
   return (
     <span className={cn('inline-flex items-center gap-1.5 rounded-sm px-2 py-0.5 text-xs font-medium', TONE_CLASSES[tone])}>
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {(label ?? status).replace(/_/g, ' ')}
+      {/* {(label ?? status).replace(/_/g, ' ')} */}
     </span>
   )
 }

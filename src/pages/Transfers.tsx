@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card } from '@tremor/react'
 import { ArrowUpRight, Plus, Info, Check, X } from 'lucide-react'
@@ -8,14 +8,16 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { FeaturePage } from '@/components/shared/FeaturePage'
+import { NoApiKey } from '@/components/shared/NoApiKey'
+import { RequireApiKeyModal } from '@/components/shared/RequireApiKeyModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { getOutboundTransfers, initiateTransfer, approveTransfer, rejectTransfer, getApps } from '@/lib/api'
+import { getOutboundTransfers, initiateTransfer, approveTransfer, rejectTransfer, getApps, getApiKeys } from '@/lib/api'
+import { activeKeyStore } from '@/lib/active-key-store'
 import { formatNgn, formatDateTime } from '@/lib/utils'
-import type { App, OutboundTransfer, SubAccountType, TransferStatus } from '@/types'
+import type { App, OutboundTransfer, SubAccountType, TransferStatus, ApiKey } from '@/types'
 
 const STATUS_FILTERS: { value: TransferStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: 'All statuses' },
@@ -31,15 +33,24 @@ function TransfersContent() {
   const [formOpen, setFormOpen] = useState(false)
   const [approveTarget, setApproveTarget] = useState<OutboundTransfer | null>(null)
   const [rejectTarget, setRejectTarget] = useState<OutboundTransfer | null>(null)
+  const [showKeyModal, setShowKeyModal] = useState(false)
+
+  const hasActiveKey = !!activeKeyStore.get()
 
   const { data: apps } = useQuery<App[]>({
     queryKey: ['apps'],
     queryFn: getApps,
   })
 
+  const { data: apiKeys } = useQuery<ApiKey[]>({
+    queryKey: ['api-keys'],
+    queryFn: () => getApiKeys(),
+  })
+
   const { data: transfers, isLoading, error, refetch } = useQuery<OutboundTransfer[]>({
     queryKey: ['transfers', status],
     queryFn: () => getOutboundTransfers({ status: status === 'ALL' ? undefined : status }),
+    enabled: hasActiveKey,
   })
 
   const approveMutation = useMutation({
@@ -61,6 +72,36 @@ function TransfersContent() {
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : 'Rejection failed'),
   })
+
+  // Show modal on initial load if no active key is set
+  useEffect(() => {
+    if (!hasActiveKey) {
+      setShowKeyModal(true)
+    }
+  }, [hasActiveKey])
+
+  // If no active key, show the NoApiKey banner and the modal
+  if (!hasActiveKey) {
+    return (
+      <div>
+        <PageHeader
+          eyebrow="Ledger"
+          title="Outbound transfers"
+          description="Customer withdrawals (VAULT) and your revenue payouts (OPS) to external Nigerian bank accounts."
+        />
+        <NoApiKey />
+        {showKeyModal && (
+          <RequireApiKeyModal
+            apiKeys={apiKeys ?? []}
+            onKeySet={() => {
+              setShowKeyModal(false)
+              queryClient.invalidateQueries({ queryKey: ['transfers'] })
+            }}
+          />
+        )}
+      </div>
+    )
+  }
 
   const pendingCount = (transfers ?? []).filter((t) => t.status === 'PENDING').length
 
@@ -318,24 +359,5 @@ function TransferFormModal({ apps, onClose, onCreated }: {
 }
 
 export default function Transfers() {
-  return (
-    <FeaturePage
-      feature="MOCK_UI"
-      comingSoon={{
-        icon: ArrowUpRight,
-        title: 'Outbound Transfers',
-        description: 'Initiate customer withdrawals from VAULT and revenue payouts from OPS to external Nigerian bank accounts. Approve or reject pending transfers directly from the dashboard.',
-        features: [
-          'VAULT: customer withdrawal to any NUBAN',
-          'OPS: revenue payout to your own bank account',
-          'Approve / Reject pending transfers (JWT — dashboard only)',
-          'Transfer status tracking (PENDING → SUBMITTED → COMPLETED)',
-          'Fee tracking and Nomba transfer reference',
-        ],
-        eta: 'Phase 3 — NV-405 business logic',
-      }}
-    >
-      <TransfersContent />
-    </FeaturePage>
-  )
+  return <TransfersContent />
 }

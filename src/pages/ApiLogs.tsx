@@ -5,8 +5,6 @@ import { ScrollText, X } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
-import { MockBadge } from '@/components/shared/MockBadge'
-import { FeaturePage } from '@/components/shared/FeaturePage'
 import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { getApiLogs } from '@/lib/api'
@@ -58,10 +56,7 @@ function ApiLogsContent() {
     <div>
       <PageHeader eyebrow="Observability" title="API logs" description="Every request to the Meroe API from your keys. Retained for 90 days." />
 
-      <div className="mb-4 flex items-center gap-2">
-        <MockBadge />
-        <span className="text-xs text-ink-600/50">Backend logs endpoint not yet available — data is simulated</span>
-      </div>
+      {/* Data is now live from backend */}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Input value={path} onChange={(e) => setPath(e.target.value)} placeholder="Filter by path, e.g. /v1/customers" className="w-64" />
@@ -141,23 +136,5 @@ function ApiLogsContent() {
 }
 
 export default function ApiLogs() {
-  return (
-    <FeaturePage
-      feature="MOCK_UI"
-      comingSoon={{
-        icon: ScrollText,
-        title: 'API Logs',
-        description: 'Full request and response log for every call made to the Meroe API with your keys, retained for 90 days.',
-        features: [
-          'Filter by status code, path, and environment',
-          'Request and response body inspector',
-          'Latency tracking per endpoint',
-          '90-day log retention',
-        ],
-        eta: 'Phase 2 — api_request_logs query endpoint',
-      }}
-    >
-      <ApiLogsContent />
-    </FeaturePage>
-  )
+  return <ApiLogsContent />
 }

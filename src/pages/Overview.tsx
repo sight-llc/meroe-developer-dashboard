@@ -1,13 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { Card, AreaChart } from '@tremor/react'
-import { Users, ArrowLeftRight, Wallet, Webhook, AlertCircle, LayoutDashboard } from 'lucide-react'
+import { Users, ArrowLeftRight, Wallet, Webhook, AlertCircle, ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
-import { MockBadge } from '@/components/shared/MockBadge'
-import { FeaturePage } from '@/components/shared/FeaturePage'
 import { getOverviewStats, getVolumeSeries, getRecentActivity } from '@/lib/api'
-import { formatCompactNgn, formatDateTime, formatPercent } from '@/lib/utils'
+import { formatCompactNgn, formatDateTime } from '@/lib/utils'
 import type { OverviewStats, RecentActivityItem, VolumePoint } from '@/types'
 
 function Kpi({
@@ -70,6 +68,8 @@ function OverviewContent() {
     'Inbound volume': p.volumeNgn,
   }))
 
+  const totalVolume = (parseFloat(stats?.inboundVolume ?? '0') + parseFloat(stats?.payoutVolume ?? '0'))
+
   return (
     <div>
       <PageHeader
@@ -78,22 +78,14 @@ function OverviewContent() {
         description="Your account's traffic, volume, and delivery health at a glance."
       />
 
-      <div className="mb-4 flex items-center gap-2">
-        <MockBadge />
-        <span className="text-xs text-ink-600/50">Backend analytics endpoints not yet available — data is simulated</span>
-      </div>
+      {/* Data is now live from backend */}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <Kpi icon={Users} label="Total customers" value={(stats?.totalCustomers ?? 0).toLocaleString()} />
-        <Kpi icon={ArrowLeftRight} label="Total transactions" value={(stats?.totalTransactions ?? 0).toLocaleString()} />
-        <Kpi icon={Wallet} label="Today's volume" value={formatCompactNgn(stats?.todaysVolumeNgn ?? '0')} tone="good" />
-        <Kpi icon={Webhook} label="Webhook success" value={formatPercent(stats?.webhookSuccessRate ?? 0)} tone="good" />
-        <Kpi
-          icon={AlertCircle}
-          label="API error rate"
-          value={formatPercent(stats?.apiErrorRate ?? 0)}
-          tone={(stats?.apiErrorRate ?? 0) > 0.05 ? 'warn' : 'default'}
-        />
+        <Kpi icon={Users} label="Total customers" value={(stats?.customers ?? 0).toLocaleString()} />
+        <Kpi icon={ArrowLeftRight} label="Total apps" value={(stats?.apps ?? 0).toLocaleString()} />
+        <Kpi icon={Webhook} label="Active API keys" value={(stats?.activeApiKeys ?? 0).toLocaleString()} />
+        <Kpi icon={Webhook} label="Active webhooks" value={(stats?.activeWebhookSubscriptions ?? 0).toLocaleString()} />
+        <Kpi icon={Wallet} label="Total volume" value={formatCompactNgn(totalVolume)} tone="good" />
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -112,50 +104,31 @@ function OverviewContent() {
           />
         </Card>
 
-        <Card className="panel !p-5">
-          <p className="label-eyebrow">Recent activity</p>
-          <ul className="mt-3 divide-y divide-paper-200">
-            {(activity ?? []).slice(0, 8).map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                <div className="min-w-0">
-                  <p className="truncate font-mono text-xs text-ink-600/80">
-                    {item.method} {item.path}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-ink-600/50">{formatDateTime(item.timestamp)}</p>
-                </div>
-                <StatusBadge
-                  status={item.statusCode < 300 ? 'MATCHED' : item.statusCode >= 500 ? 'MISDIRECTED' : 'UNMATCHED'}
-                  label={String(item.statusCode)}
-                />
-              </li>
-            ))}
-          </ul>
-        </Card>
+         <Card className="panel !p-5">
+           <p className="label-eyebrow">Recent activity</p>
+           <ul className="mt-3 divide-y divide-paper-200">
+             {(activity ?? []).slice(0, 8).map((item, index) => (
+               <li key={index} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                 <div className="min-w-0">
+                   <p className="truncate font-mono text-xs text-ink-600/80">
+                     {item.kind === 'INBOUND' ? <ArrowDownLeft className="inline h-3 w-3 text-vault-600" /> : <ArrowUpRight className="inline h-3 w-3 text-ink-600" />} {item.counterparty}
+                   </p>
+                   <p className="mt-0.5 text-[11px] text-ink-600/50">{item.narration}</p>
+                 </div>
+                 <div className="text-right">
+                   <p className="font-mono text-xs font-medium text-ink">{formatCompactNgn(String(item.amount))}</p>
+                   <p className="mt-0.5 text-[11px] text-ink-600/50">{formatDateTime(item.occurredAt)}</p>
+                   <StatusBadge status={item.status} label={item.status} />
+                 </div>
+               </li>
+             ))}
+           </ul>
+         </Card>
       </div>
     </div>
   )
 }
 
 export default function Overview() {
-  return (
-    <FeaturePage
-      feature="MOCK_UI"
-      comingSoon={{
-        icon: LayoutDashboard,
-        title: 'Platform Overview',
-        description:
-          'A real-time snapshot of your transaction volume, customer growth, webhook health, and API error rate.',
-        features: [
-          '30-day inbound volume area chart',
-          'KPI cards: customers, transactions, daily volume',
-          'Webhook delivery success rate',
-          'API error rate monitoring',
-          'Recent API activity feed',
-        ],
-        eta: 'Phase 2 — backend analytics endpoints',
-      }}
-    >
-      <OverviewContent />
-    </FeaturePage>
-  )
+  return <OverviewContent />
 }
