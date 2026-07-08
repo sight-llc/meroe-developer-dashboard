@@ -641,7 +641,7 @@ export async function getApiLogs(params?: { statusCode?: string; environment?: E
 // ── Overview ✅ ─────────────────────────────────────────────────────────────
 // GET /v1/developers/stats/overview
 export async function getOverviewStats(): Promise<OverviewStats> {
-  const raw = await request<{
+  return request<{
     customers: number
     apps: number
     activeApiKeys: number
@@ -651,13 +651,6 @@ export async function getOverviewStats(): Promise<OverviewStats> {
     payoutCount: number
     payoutVolume: string
   }>('/v1/developers/stats/overview')
-  return {
-    totalCustomers: raw.customers,
-    totalTransactions: raw.inboundCount + raw.payoutCount,
-    todaysVolumeNgn: raw.inboundVolume,
-    webhookSuccessRate: 0, // Not in overview response, would need separate calculation
-    apiErrorRate: 0, // Not in overview response, would need separate calculation
-  }
 }
 
 // GET /v1/developers/stats/volume
@@ -673,20 +666,14 @@ export async function getVolumeSeries(days = 30): Promise<VolumePoint[]> {
 
 // GET /v1/developers/stats/activity
 export async function getRecentActivity(): Promise<RecentActivityItem[]> {
-  const raw = await request<{
-    id: string
-    method: string
-    path: string
-    statusCode: number
-    timestamp: string
+  return request<{
+    occurredAt: string
+    kind: 'PAYOUT' | 'INBOUND'
+    counterparty: string
+    narration: string
+    amount: number
+    status: string
   }[]>('/v1/developers/stats/activity')
-  return raw.map((a) => ({
-    id: a.id,
-    method: a.method,
-    path: a.path,
-    statusCode: a.statusCode,
-    timestamp: a.timestamp,
-  }))
 }
 
 // ── Received Payments ✅ ───────────────────────────────────────────────────

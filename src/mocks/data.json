@@ -216,8 +216,14 @@
   ],
 
   "overviewStats": {
-    "totalCustomers": 1284, "totalTransactions": 9931,
-    "todaysVolumeNgn": "8420500.00", "webhookSuccessRate": 0.974, "apiErrorRate": 0.012
+    "customers": 3,
+    "apps": 2,
+    "activeApiKeys": 4,
+    "activeWebhookSubscriptions": 0,
+    "inboundCount": 1,
+    "inboundVolume": "100.0000",
+    "payoutCount": 1,
+    "payoutVolume": "50.0000"
   },
 
   "volumeSeries30d": [
@@ -239,14 +245,22 @@
   ],
 
   "recentActivity": [
-    { "id": "log_01", "method": "POST", "path": "/v1/customers", "statusCode": 201, "timestamp": "2026-06-20T07:42:00Z" },
-    { "id": "log_03", "method": "POST", "path": "/v1/transfers", "statusCode": 201, "timestamp": "2026-06-20T08:00:10Z" },
-    { "id": "log_08", "method": "POST", "path": "/v1/transfers/ot_03/approve", "statusCode": 200, "timestamp": "2026-06-20T09:00:00Z" },
-    { "id": "log_02", "method": "GET", "path": "/v1/customers/cus_01", "statusCode": 200, "timestamp": "2026-06-20T07:30:00Z" },
-    { "id": "log_05", "method": "GET", "path": "/v1/customers/cus_03/balance", "statusCode": 200, "timestamp": "2026-06-18T08:14:30Z" },
-    { "id": "log_06", "method": "PUT", "path": "/v1/customers/cus_03/suspend", "statusCode": 200, "timestamp": "2026-06-05T12:00:00Z" },
-    { "id": "log_07", "method": "GET", "path": "/v1/customers", "statusCode": 200, "timestamp": "2026-06-16T10:00:00Z" },
-    { "id": "log_09", "method": "GET", "path": "/v1/apps", "statusCode": 200, "timestamp": "2026-06-14T09:00:00Z" }
+    {
+      "occurredAt": "2026-07-08T07:19:53.927518Z",
+      "kind": "PAYOUT",
+      "counterparty": "EBUKA JOHNPETER MADUKA",
+      "narration": "Test",
+      "amount": 50.0000,
+      "status": "COMPLETED"
+    },
+    {
+      "occurredAt": "2026-07-08T07:06:13.197Z",
+      "kind": "INBOUND",
+      "counterparty": "EBUKA JOHNPETER MADUKA",
+      "narration": "Transfer from EBUKA JOHNPETER MADUKA",
+      "amount": 100.0000,
+      "status": "NO_EXPECTATION"
+    }
   ],
 
   "sandboxHistory": [

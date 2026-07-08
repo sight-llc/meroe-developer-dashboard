@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Card } from '@tremor/react'
 import { FlaskConical, Terminal } from 'lucide-react'
@@ -40,14 +40,14 @@ export default function Sandbox() {
     queryFn: getSandboxHistory,
   })
 
-  // Auto-set defaults once customers load
-  const [initialized, setInitialized] = useState(false)
-  if (customers && customers.length > 0 && !initialized) {
-    const sandbox = customers.find((c) => c.environment === 'sandbox') ?? customers[0]
-    setVirtualAccountId(sandbox.id)
-    setSenderName(sandbox.fullName)
-    setInitialized(true)
-  }
+  // Auto-set defaults once customers load (using useEffect to avoid render loop)
+  useEffect(() => {
+    if (customers && customers.length > 0 && !virtualAccountId) {
+      const sandbox = customers.find((c) => c.environment === 'sandbox') ?? customers[0]
+      setVirtualAccountId(sandbox.id)
+      setSenderName(sandbox.fullName)
+    }
+  }, [customers, virtualAccountId])
 
   const selectedCustomer = (customers ?? []).find((c) => c.id === virtualAccountId)
   const accountRef = selectedCustomer?.nuban ?? 'ACCOUNT_REF'
@@ -174,7 +174,7 @@ export default function Sandbox() {
                   <tr key={sim.id}>
                     <td className="px-5 py-3 text-ink">{sim.customerName}</td>
                     <td className="px-5 py-3 font-mono text-xs tabular-nums">{formatNgn(sim.amount)}</td>
-                    <td className="px-5 py-3 text-xs text-ink-600/70">{sim.scenario.replace(/_/g, ' ')}</td>
+                    <td className="px-5 py-3 text-xs text-ink-600/70">{sim.scenario?.replace(/_/g, ' ') ?? '—'}</td>
                     <td className="px-5 py-3"><StatusBadge status={sim.result} /></td>
                     <td className="px-5 py-3 text-xs text-ink-600/50">{formatDateTime(sim.createdAt)}</td>
                   </tr>
