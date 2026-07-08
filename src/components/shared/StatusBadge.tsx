@@ -22,14 +22,14 @@ const STATUS_TONE_MAP: Record<string, Tone> = {
   PROVISIONING: 'unmatched', EXPIRED: 'neutral', FAILED: 'danger',
   // KYC
   APPROVED: 'matched', REJECTED: 'danger',
-  // Webhook delivery
-  delivered: 'matched', failed: 'unmatched', dead: 'danger',
+  // Webhook delivery (uppercase — real backend)
+  PENDING: 'unmatched', SENDING: 'unmatched', DELIVERED: 'matched', DEAD: 'danger',
   // API key status (uppercase — real backend)
   REVOKED: 'danger', ROLLING: 'unmatched',
   // Webhook subscription status (uppercase)
   PAUSED: 'neutral',
   // Transfer / transaction status
-  PENDING: 'unmatched', SUBMITTED: 'unmatched', COMPLETED: 'matched', SETTLED: 'matched',
+  SUBMITTED: 'unmatched', COMPLETED: 'matched', SETTLED: 'matched',
   // App status
   INACTIVE: 'neutral',
 }
