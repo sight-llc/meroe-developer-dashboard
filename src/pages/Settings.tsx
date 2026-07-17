@@ -9,7 +9,7 @@ import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { getDeveloperProfile, updateDeveloperProfile, uploadKycDocuments, changePassword, setTransactionPin } from '@/lib/api'
+import { getDeveloperProfile, updateDeveloperProfile, uploadKycDocumentFile, submitDeveloperKycDocuments, changePassword, setTransactionPin } from '@/lib/api'
 import type { DeveloperProfile } from '@/types'
 
 function SettingsContent() {
@@ -20,22 +20,22 @@ function SettingsContent() {
   })
 
   const [businessName, setBusinessName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
+  const [company, setCompany] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
+  const [kycFile, setKycFile] = useState<File | null>(null)
+  const [documentRefs, setDocumentRefs] = useState('')
 
   // Sync form state when profile loads
   const [initialized, setInitialized] = useState(false)
   if (profile && !initialized) {
     setBusinessName(profile.businessName)
-    setEmail(profile.email)
-    setPhone(profile.phone)
+    setCompany(profile.company ?? '')
     setInitialized(true)
   }
 
   const updateProfileMutation = useMutation({
-    mutationFn: (input: Partial<Pick<DeveloperProfile, 'businessName' | 'email' | 'phone'>>) => updateDeveloperProfile(input),
+    mutationFn: (input: Partial<Pick<DeveloperProfile, 'businessName' | 'email' | 'phone' | 'company'>>) => updateDeveloperProfile(input),
     onSuccess: (data) => {
       queryClient.setQueryData(['developer-profile'], data)
       toast.success('Profile updated')
@@ -44,12 +44,27 @@ function SettingsContent() {
   })
 
   const kycMutation = useMutation({
-    mutationFn: uploadKycDocuments,
-    onSuccess: (data) => {
-      const current = queryClient.getQueryData<DeveloperProfile>(['developer-profile'])
-      if (current) {
-        queryClient.setQueryData(['developer-profile'], { ...current, kycStatus: data.kycStatus })
+    mutationFn: async () => {
+      const documentReferences: string[] = []
+      // Upload file if provided
+      if (kycFile) {
+        const { documentId } = await uploadKycDocumentFile(kycFile)
+        documentReferences.push(documentId)
       }
+      // Add any manually entered document references
+      if (documentRefs.trim()) {
+        const refs = documentRefs.split(',').map((r) => r.trim()).filter(Boolean)
+        documentReferences.push(...refs)
+      }
+      if (documentReferences.length === 0) {
+        throw new Error('Upload a file or enter at least one document reference')
+      }
+      return submitDeveloperKycDocuments(documentReferences)
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['developer-profile'], data)
+      setKycFile(null)
+      setDocumentRefs('')
       toast.success('Documents submitted — KYC review in progress')
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : 'Upload failed'),
@@ -83,12 +98,12 @@ function SettingsContent() {
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
-    updateProfileMutation.mutate({ businessName, email, phone })
+    updateProfileMutation.mutate({ businessName, company })
   }
 
   function handleToggleLive() {
     if (!profile) return
-    if (profile.kycStatus !== 'APPROVED') {
+    if (profile.verificationStatus !== 'APPROVED') {
       toast.warning('KYC must be approved before enabling live mode')
       return
     }
@@ -115,9 +130,9 @@ function SettingsContent() {
           <form onSubmit={handleSaveProfile} className="mt-4 space-y-3.5">
             <div className="grid grid-cols-2 gap-3.5">
               <div className="space-y-1.5"><Label htmlFor="biz-name">Business name</Label><Input id="biz-name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label htmlFor="biz-phone">Phone</Label><Input id="biz-phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="font-mono" /></div>
+              <div className="space-y-1.5"><Label htmlFor="biz-company">Company</Label><Input id="biz-company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Optional" /></div>
             </div>
-            <div className="space-y-1.5"><Label htmlFor="biz-email">Email</Label><Input id="biz-email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" /></div>
+            <p className="text-xs text-ink-600/50">Email: <span className="font-mono">{profile.email}</span></p>
             <Button type="submit" disabled={updateProfileMutation.isPending} size="sm">
               {updateProfileMutation.isPending && <Spinner className="h-3.5 w-3.5 text-white" />}
               Save changes
@@ -131,25 +146,48 @@ function SettingsContent() {
               <p className="label-eyebrow">Verification</p>
               <p className="mt-1 text-sm text-ink-600/70">KYC status for accessing the live environment.</p>
             </div>
-            <StatusBadge status={profile.kycStatus} />
+            <StatusBadge status={profile.verificationStatus} />
           </div>
-          {profile.kycStatus !== 'APPROVED' && (
-            <Button variant="outline" size="sm" className="mt-4" onClick={() => kycMutation.mutate()} disabled={kycMutation.isPending}>
-              {kycMutation.isPending ? <Spinner className="h-3.5 w-3.5" /> : <Upload className="h-3.5 w-3.5" />}
-              Upload verification documents
-            </Button>
+          {profile.verificationStatus !== 'APPROVED' && (
+            <div className="mt-4 space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="kyc-file">Upload document (PDF, PNG, JPEG)</Label>
+                <Input
+                  id="kyc-file"
+                  type="file"
+                  accept=".pdf,.png,.jpeg,.jpg"
+                  onChange={(e) => setKycFile(e.target.files?.[0] ?? null)}
+                  className="text-sm file:mr-3 file:rounded-sm file:border-0 file:bg-vault-50 file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-vault-700 hover:file:bg-vault-100"
+                />
+                {kycFile && <p className="text-xs text-ink-600/60">Selected: {kycFile.name}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="kyc-refs">Or enter document references (comma-separated)</Label>
+                <Input
+                  id="kyc-refs"
+                  value={documentRefs}
+                  onChange={(e) => setDocumentRefs(e.target.value)}
+                  placeholder="doc_passport_9f2, doc_utility_bill_1a7"
+                  className="font-mono text-xs"
+                />
+              </div>
+              <Button variant="outline" size="sm" onClick={() => kycMutation.mutate()} disabled={kycMutation.isPending || (!kycFile && !documentRefs.trim())}>
+                {kycMutation.isPending ? <Spinner className="h-3.5 w-3.5" /> : <Upload className="h-3.5 w-3.5" />}
+                Submit for review
+              </Button>
+            </div>
           )}
           <div className="mt-5 flex items-center justify-between border-t border-paper-200 pt-4">
             <div className="flex items-center gap-2">
               <ShieldCheck className={profile.liveEnabled ? 'h-4 w-4 text-vault-600' : 'h-4 w-4 text-ink-600/40'} />
               <div>
                 <p className="text-sm font-medium text-ink">Live environment</p>
-                <p className="text-xs text-ink-600/60">{profile.kycStatus === 'APPROVED' ? 'Process real customer payments.' : 'Requires approved KYC before this can be enabled.'}</p>
+                <p className="text-xs text-ink-600/60">{profile.verificationStatus === 'APPROVED' ? 'Process real customer payments.' : 'Requires approved KYC before this can be enabled.'}</p>
               </div>
             </div>
             <button
               onClick={handleToggleLive}
-              disabled={profile.kycStatus !== 'APPROVED'}
+              disabled={profile.verificationStatus !== 'APPROVED'}
               className={profile.liveEnabled ? 'relative h-6 w-11 rounded-full bg-vault-600 transition-colors disabled:opacity-40' : 'relative h-6 w-11 rounded-full bg-paper-200 transition-colors disabled:opacity-40'}
             >
               <span className={profile.liveEnabled ? 'absolute left-[22px] top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all' : 'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all'} />

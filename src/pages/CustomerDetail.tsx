@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card } from '@tremor/react'
-import { ArrowLeft, FileDown, FileSpreadsheet, ChevronDown } from 'lucide-react'
+import { ArrowLeft, FileDown, FileSpreadsheet, ChevronDown, FileCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { ApiStateDisplay } from '@/components/shared/ApiStateDisplay'
 import { StatusBadge } from '@/components/shared/StatusBadge'
@@ -10,10 +10,14 @@ import { CopyButton } from '@/components/shared/CopyButton'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { Spinner } from '@/components/shared/PageHeader'
 import { NoApiKey } from '@/components/shared/NoApiKey'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { activeKeyStore } from '@/lib/active-key-store'
 import {
   getCustomer, getCustomerBalance, getCustomerTransactions, downloadStatement,
   suspendCustomer, reactivateCustomer, closeCustomer, renameCustomer, changeKycTier,
+  submitCustomerKycDocuments,
 } from '@/lib/api'
 import { formatNgn, formatDateTime, formatDate } from '@/lib/utils'
 import type { Customer, TransactionPage, BalanceState, KycTier } from '@/types'
@@ -27,6 +31,9 @@ export default function CustomerDetail() {
   const [downloading, setDownloading] = useState<'pdf' | 'csv' | null>(null)
   const [actionPending, setActionPending] = useState<LifecycleAction>(null)
   const [actionsOpen, setActionsOpen] = useState(false)
+  const [kycOpen, setKycOpen] = useState(false)
+  const [kycBvn, setKycBvn] = useState('')
+  const [kycDocRefs, setKycDocRefs] = useState('')
 
   const hasActiveKey = !!activeKeyStore.get()
 
@@ -76,6 +83,24 @@ export default function CustomerDetail() {
       setActionPending(null)
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : 'Action failed'),
+  })
+
+  const kycMutation = useMutation({
+    mutationFn: () => {
+      const documentReferences = kycDocRefs.split(',').map((r) => r.trim()).filter(Boolean)
+      return submitCustomerKycDocuments(id!, {
+        bvn: kycBvn || undefined,
+        documentReferences,
+      })
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['customer', id], data)
+      toast.success('KYC documents submitted for review')
+      setKycOpen(false)
+      setKycBvn('')
+      setKycDocRefs('')
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'KYC submission failed'),
   })
 
   async function handleDownload(format: 'pdf' | 'csv') {
@@ -170,6 +195,9 @@ export default function CustomerDetail() {
           </button>
           <button onClick={() => handleDownload('csv')} disabled={downloading === 'csv'} className="flex items-center gap-1.5 rounded-sm border border-paper-200 bg-white px-3 py-2 text-sm font-medium text-ink-600 hover:bg-paper-100 disabled:opacity-60">
             <FileSpreadsheet className="h-3.5 w-3.5" />{downloading === 'csv' ? 'Preparing…' : 'CSV'}
+          </button>
+          <button onClick={() => setKycOpen(!kycOpen)} className="flex items-center gap-1.5 rounded-sm border border-paper-200 bg-white px-3 py-2 text-sm font-medium text-ink-600 hover:bg-paper-100">
+            <FileCheck className="h-3.5 w-3.5" /> Submit KYC
           </button>
 
           {/* Lifecycle actions dropdown */}
@@ -311,6 +339,31 @@ export default function CustomerDetail() {
           )}
         </Card>
       </div>
+
+      {/* KYC document submission form */}
+      {kycOpen && (
+        <Card className="panel !p-5 mt-5">
+          <p className="label-eyebrow">Submit KYC Documents</p>
+          <p className="mt-1 text-sm text-ink-600/70">Submit BVN and document references for KYC review.</p>
+          <div className="mt-4 space-y-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="kyc-bvn">BVN (optional, 11 digits)</Label>
+              <Input id="kyc-bvn" value={kycBvn} onChange={(e) => setKycBvn(e.target.value.replace(/\D/g, '').slice(0, 11))} placeholder="00123456789" className="font-mono" maxLength={11} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="kyc-refs">Document references (comma-separated)</Label>
+              <Input id="kyc-refs" value={kycDocRefs} onChange={(e) => setKycDocRefs(e.target.value)} placeholder="doc_passport_9f2, doc_utility_bill_1a7" className="font-mono text-xs" />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" disabled={kycMutation.isPending || (!kycBvn && !kycDocRefs.trim())} onClick={() => kycMutation.mutate()}>
+                {kycMutation.isPending && <Spinner className="h-3.5 w-3.5 text-white" />}
+                Submit for review
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { setKycOpen(false); setKycBvn(''); setKycDocRefs('') }}>Cancel</Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Lifecycle confirm modals */}
       <ConfirmModal

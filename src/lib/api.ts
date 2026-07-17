@@ -1,12 +1,13 @@
 // ─────────────────────────────────────────────────────────────────────────
 // Meroe Developer Dashboard — API layer
-// Aligned with sight-llc/nombadva development branch (2026-07-04)
+// Aligned with sight-llc/nombadva development branch (2026-07-17)
 //
 // BACKEND STATUS:
 //   ✅ POST /v1/developers/auth/register|login|refresh
-//   ✅ GET|POST /v1/apps
+//   ✅ GET|POST /v1/apps  (environment via X-Environment header)
 //   ✅ PATCH|DELETE /v1/apps/{id}
-//   ✅ GET|POST /v1/api-keys,  DELETE /v1/api-keys/{id}
+//   ✅ GET|POST /v1/api-keys  (environment via X-Environment header)
+//   ✅ DELETE /v1/api-keys/{id}
 //   ✅ POST /v1/api-keys/{id}/roll
 //   ✅ POST /v1/customers,  GET /v1/customers,  GET /v1/customers/{id}
 //   ✅ GET /v1/customers/{id}/balance
@@ -14,6 +15,7 @@
 //   ✅ PATCH /v1/customers/{id}/name
 //   ✅ PUT /v1/customers/{id}/kyc|suspend|reactivate|close
 //   ✅ GET /v1/customers/{id}/statements
+//   ✅ POST /v1/customers/{id}/kyc-documents
 //   ✅ GET|POST /v1/webhook-subscriptions
 //   ✅ DELETE /v1/webhook-subscriptions/{id}
 //   ✅ GET|POST /v1/webhook-subscriptions/{id}/deliveries
@@ -27,17 +29,18 @@
 //   ✅ GET|PATCH /v1/developers/me
 //   ✅ POST /v1/developers/me/transaction-pin
 //   ✅ PUT /v1/developers/me/password
+//   ✅ POST /v1/developers/me/kyc-documents/upload  (multipart)
+//   ✅ POST /v1/developers/me/kyc-documents
+//   ✅ GET /v1/fees/quote
 //   ✅ GET /v1/reconciliation/summary
-//   ✅ GET /v1/misdirected-payments
-//   ✅ POST /v1/misdirected-payments/{id}/resolve
-//   ✅ GET /v1/sandbox/history
-//   ❌ POST /v1/developers/me/kyc-documents — MOCKED
-//   ❌ POST /v1/transfers/{id}/refund — MOCKED
+//   ✅ POST /v1/reconciliation/{txId}/refund
+//   ✅ GET /v1/payments  (cursor-paginated)
 // ─────────────────────────────────────────────────────────────────────────
 
 import mock from '@/mocks/data.json'
 import { tokenStore } from '@/lib/token-store'
 import { activeKeyStore } from '@/lib/active-key-store'
+import { envStore } from '@/lib/env-store'
 import type {
   App, ApiKey, ApiKeyCreated, ApiLogEntry, ApiScope,
   AuthSession, BalanceState, Customer, DeveloperProfile,
@@ -76,6 +79,10 @@ async function request<T>(path: string, init?: RequestInit, auth: 'jwt' | 'apike
   if (auth === 'jwt') {
     const token = tokenStore.get()
     if (token) headers['Authorization'] = `Bearer ${token}`
+    if (!headers['X-Environment']) {
+      const env = envStore.get()
+      if (env === 'live') headers['X-Environment'] = 'live'
+    }
   } else {
     const activeKey = activeKeyStore.get()
     if (activeKey) headers['Authorization'] = `Bearer ${activeKey.rawKey}`
@@ -291,8 +298,19 @@ export async function registerDeveloper(input: { name: string; email: string; co
   await request('/v1/developers/auth/register', { method: 'POST', body: JSON.stringify(input) })
 }
 
-// No backend logout endpoint — token cleared client-side only
+// POST /v1/developers/auth/logout — revokes the refresh token server-side
 export async function logoutDeveloper(): Promise<void> {
+  const refreshToken = tokenStore.getRefreshToken()
+  if (refreshToken) {
+    try {
+      await request('/v1/developers/auth/logout', {
+        method: 'POST',
+        body: JSON.stringify({ refreshToken }),
+      })
+    } catch {
+      // Server-side revocation is best-effort; always clear local tokens
+    }
+  }
   tokenStore.clear()
 }
 
@@ -303,8 +321,8 @@ export async function getApps(): Promise<App[]> {
 }
 
 // POST /v1/apps
-export async function createApp(input: { name: string; description: string }): Promise<App> {
-  return request('/v1/apps', { method: 'POST', body: JSON.stringify(input) })
+export async function createApp(input: { name: string; description: string }, extraHeaders?: Record<string, string>): Promise<App> {
+  return request('/v1/apps', { method: 'POST', body: JSON.stringify(input), headers: extraHeaders })
 }
 
 // PATCH /v1/apps/{id} — ✅ Available
@@ -326,10 +344,10 @@ export async function getApiKeys(appId?: string): Promise<ApiKey[]> {
 }
 
 // POST /v1/api-keys  { appId, scopes, readOnly }
-export async function createApiKey(input: { appId: string; scopes: ApiScope[] }): Promise<ApiKeyCreated> {
+export async function createApiKey(input: { appId: string; scopes: ApiScope[] }, extraHeaders?: Record<string, string>): Promise<ApiKeyCreated> {
   const res = await request<{ id: string; rawKey: string; keyPrefix: string; lastFour: string; environment: string; scopes: string[]; warning: string }>(
     '/v1/api-keys',
-    { method: 'POST', body: JSON.stringify({ appId: input.appId, scopes: input.scopes, readOnly: false }) },
+    { method: 'POST', body: JSON.stringify({ appId: input.appId, scopes: input.scopes, readOnly: false }), headers: extraHeaders },
   )
   return {
     id: res.id,
@@ -445,11 +463,11 @@ export async function suspendCustomer(id: string, reason: string): Promise<Custo
   return mapCustomer(raw, env)
 }
 
-// PUT /v1/customers/{id}/reactivate
-export async function reactivateCustomer(id: string): Promise<Customer> {
+// PUT /v1/customers/{id}/reactivate  — now requires a note field
+export async function reactivateCustomer(id: string, note?: string): Promise<Customer> {
   const raw = await request<BackendCustomerResponse>(
     `/v1/customers/${id}/reactivate`,
-    { method: 'PUT' },
+    { method: 'PUT', body: JSON.stringify({ note: note ?? 'Reactivated via dashboard' }) },
     'apikey',
   )
   const env = activeKeyStore.get()?.environment ?? 'sandbox'
@@ -556,6 +574,8 @@ export async function getWebhookDeliveries(subscriptionId: string): Promise<Webh
 
 // ── Reconciliation ✅ ───────────────────────────────────────────────────────
 // GET /v1/reconciliation/summary
+// Backend returns: { total, matched, misdirected, recovered, otherCredited, byOutcome }
+// byOutcome contains keyed buckets with the raw counts — extract unmatched from it
 export async function getReconciliationSummary(): Promise<{ matched: number; unmatched: number; misdirected: number }> {
   const raw = await request<{
     total: number
@@ -565,9 +585,12 @@ export async function getReconciliationSummary(): Promise<{ matched: number; unm
     otherCredited: number
     byOutcome: Record<string, number>
   }>('/v1/reconciliation/summary')
+  // Extract unmatched from the byOutcome map — any outcome not matched/misdirected/recovered
+  const accounted = (raw.byOutcome?.MATCHED ?? raw.matched) + (raw.byOutcome?.MISDIRECTED ?? raw.misdirected) + (raw.byOutcome?.RECOVERED ?? raw.recovered)
+  const total = raw.byOutcome ? Object.values(raw.byOutcome).reduce((a, b) => a + b, 0) : raw.total
   return {
     matched: raw.matched,
-    unmatched: raw.otherCredited, // Map otherCredited to unmatched for UI compatibility
+    unmatched: raw.byOutcome ? total - accounted : raw.otherCredited,
     misdirected: raw.misdirected,
   }
 }
@@ -602,9 +625,14 @@ export async function confirmCorrect(txId: string): Promise<{ txId: string; stat
   return { txId, status: 'MATCHED' as const }
 }
 
-// Note: initiateRefund still mocked - no backend endpoint
-export async function initiateRefund(txId: string): Promise<{ txId: string; status: 'REFUNDED' }> {
-  return mockResolve({ txId, status: 'REFUNDED' as const }, 500)
+// POST /v1/reconciliation/{txId}/refund — CTO/CEO_OWNER + transaction PIN required
+export async function initiateRefund(txId: string, transactionPin?: string): Promise<{ txId: string; status: string }> {
+  const headers: Record<string, string> = {}
+  if (transactionPin) headers['X-Transaction-Pin'] = transactionPin
+  return request(`/v1/reconciliation/${txId}/refund`, {
+    method: 'POST',
+    headers,
+  })
 }
 
 // ── API Logs ✅ ─────────────────────────────────────────────────────────────
@@ -678,20 +706,69 @@ export async function getRecentActivity(): Promise<RecentActivityItem[]> {
 
 // ── Received Payments ✅ ───────────────────────────────────────────────────
 // GET /v1/payments  (API key auth, scope: payments:read)
-export async function getReceivedPayments(): Promise<{
-  id: string
-  customerId: string | null
-  virtualAccountId: string | null
+// Now cursor-paginated (limit + cursor params)
+interface BackendPaymentPage {
+  items: {
+    id: string
+    customerId: string | null
+    virtualAccountId: string | null
+    amount: string
+    fee: string
+    senderName: string
+    senderAccount: string
+    senderBank: string
+    narration: string
+    reconOutcome: string
+    occurredAt: string
+  }[]
+  nextCursor: string | null
+}
+export async function getReceivedPayments(limit = 20, cursor?: string): Promise<{
+  payments: {
+    id: string
+    customerId: string | null
+    virtualAccountId: string | null
+    amount: string
+    fee: string
+    senderName: string
+    senderAccount: string
+    senderBank: string
+    narration: string
+    reconOutcome: string
+    occurredAt: string
+  }[]
+  nextCursor: string | null
+}> {
+  const params = new URLSearchParams({ limit: String(limit) })
+  if (cursor) params.set('cursor', cursor)
+  const raw = await request<BackendPaymentPage>(`/v1/payments?${params.toString()}`, undefined, 'apikey')
+  return {
+    payments: raw.items,
+    nextCursor: raw.nextCursor,
+  }
+}
+
+// ── Fee Quote ✅ ─────────────────────────────────────────────────────────────
+// GET /v1/fees/quote?direction=INBOUND|OUTBOUND&amount=X
+export async function getFeeQuote(direction: 'INBOUND' | 'OUTBOUND', amount: string): Promise<{
+  direction: string
   amount: string
   fee: string
-  senderName: string
-  senderAccount: string
-  senderBank: string
-  narration: string
-  reconOutcome: string
-  occurredAt: string
-}[]> {
-  return request('/v1/payments', undefined, 'apikey')
+  netAmount: string
+}> {
+  return request(`/v1/fees/quote?direction=${direction}&amount=${amount}`)
+}
+
+// ── Customer KYC Documents ✅ ───────────────────────────────────────────────
+// POST /v1/customers/{id}/kyc-documents  { bvn, documentReferences }
+export async function submitCustomerKycDocuments(id: string, input: { bvn?: string; documentReferences: string[] }): Promise<Customer> {
+  const raw = await request<BackendCustomerResponse>(
+    `/v1/customers/${id}/kyc-documents`,
+    { method: 'POST', body: JSON.stringify(input) },
+    'apikey',
+  )
+  const env = activeKeyStore.get()?.environment ?? 'sandbox'
+  return mapCustomer(raw, env)
 }
 
 // ── Sandbox ✅ ─────────────────────────────────────────────────────────────
@@ -813,7 +890,12 @@ export async function initiateTransfer(input: {
 }
 
 // POST /v1/transfers/{id}/approve  (developer JWT — dashboard action)
-export async function approveTransfer(id: string): Promise<OutboundTransfer> {
+// Now requires X-Transaction-Pin header for money-release gating
+export async function approveTransfer(id: string, transactionPin?: string): Promise<OutboundTransfer> {
+  const headers: Record<string, string> = {}
+  if (transactionPin) {
+    headers['X-Transaction-Pin'] = transactionPin
+  }
   const res = await request<{
     id: string; customerId: string | null; sourceSubAccount: string;
     amount: string; fee: string; destinationBankCode: string;
@@ -821,7 +903,7 @@ export async function approveTransfer(id: string): Promise<OutboundTransfer> {
     merchantTxRef: string; nombaTransferId: string | null;
     status: string; environment: string; createdAt: string;
     submittedAt: string | null; completedAt: string | null; failureReason: string | null;
-  }>(`/v1/transfers/${id}/approve`, { method: 'POST' })
+  }>(`/v1/transfers/${id}/approve`, { method: 'POST', headers })
   return {
     id: res.id, appId: '', customerId: res.customerId,
     sourceSubAccount: res.sourceSubAccount as SubAccountType,
@@ -861,6 +943,61 @@ export async function rejectTransfer(id: string, reason?: string): Promise<Outbo
     environment: res.environment as Environment,
     createdAt: res.createdAt, submittedAt: res.submittedAt,
     completedAt: res.completedAt, failureReason: res.failureReason,
+  }
+}
+
+// POST /v1/transfers/parent  (API key auth, scope: transfers:write)
+// Routes through the platform parent account pool instead of merchant sub-account
+export async function initiateParentTransfer(input: {
+  appId: string
+  customerId: string
+  sourceSubAccount: SubAccountType
+  destinationAccountNumber: string
+  destinationBankCode: string
+  destinationAccountName: string
+  amount: string
+  fee?: string
+  narration: string
+  merchantTxRef: string
+}): Promise<OutboundTransfer> {
+  const body: Record<string, unknown> = {
+    customerId: input.customerId,
+    sourceSubAccount: input.sourceSubAccount,
+    amount: input.amount,
+    destinationBankCode: input.destinationBankCode,
+    destinationAccountNumber: input.destinationAccountNumber,
+    destinationAccountName: input.destinationAccountName,
+    narration: input.narration,
+    merchantTxRef: input.merchantTxRef,
+  }
+  if (input.fee) body.fee = input.fee
+  const res = await request<{
+    id: string; customerId: string | null; sourceSubAccount: string;
+    amount: string; fee: string; destinationBankCode: string;
+    destinationAccountNumber: string; destinationAccountName: string;
+    merchantTxRef: string; nombaTransferId: string | null;
+    status: string; environment: string; createdAt: string;
+    submittedAt: string | null; completedAt: string | null; failureReason: string | null;
+  }>('/v1/transfers/parent', { method: 'POST', body: JSON.stringify(body) }, 'apikey')
+  return {
+    id: res.id,
+    appId: input.appId,
+    customerId: res.customerId,
+    sourceSubAccount: res.sourceSubAccount as SubAccountType,
+    amount: res.amount,
+    fee: res.fee === '0' ? null : res.fee,
+    destinationAccountNumber: res.destinationAccountNumber,
+    destinationBankCode: res.destinationBankCode,
+    destinationAccountName: res.destinationAccountName,
+    narration: input.narration,
+    merchantTxRef: res.merchantTxRef,
+    nombaTransferId: res.nombaTransferId,
+    status: res.status as OutboundTransfer['status'],
+    environment: res.environment as Environment,
+    createdAt: res.createdAt,
+    submittedAt: res.submittedAt,
+    completedAt: res.completedAt,
+    failureReason: res.failureReason,
   }
 }
 
@@ -940,6 +1077,7 @@ export async function getDeveloperProfile(): Promise<DeveloperProfile> {
     liveEnabled: boolean
     status: string
     hasTransactionPin: boolean
+    verificationStatus: string
     createdAt: string
   }>('/v1/developers/me')
   return {
@@ -947,8 +1085,10 @@ export async function getDeveloperProfile(): Promise<DeveloperProfile> {
     email: raw.email,
     phone: '', // Not in backend response
     company: raw.company,
-    kycStatus: 'APPROVED', // Would need to derive from status
+    kycStatus: raw.verificationStatus as DeveloperProfile['kycStatus'],
+    verificationStatus: raw.verificationStatus as DeveloperProfile['verificationStatus'],
     liveEnabled: raw.liveEnabled,
+    hasTransactionPin: raw.hasTransactionPin,
   }
 }
 
@@ -961,7 +1101,7 @@ export async function setTransactionPin(pin: string, currentPassword: string): P
 }
 
 // PATCH /v1/developers/me
-export async function updateDeveloperProfile(input: Partial<Pick<DeveloperProfile, 'businessName' | 'email' | 'phone'>>): Promise<DeveloperProfile> {
+export async function updateDeveloperProfile(input: Partial<Pick<DeveloperProfile, 'businessName' | 'email' | 'phone' | 'company'>>): Promise<DeveloperProfile> {
   const raw = await request<{
     id: string
     name: string
@@ -970,24 +1110,58 @@ export async function updateDeveloperProfile(input: Partial<Pick<DeveloperProfil
     liveEnabled: boolean
     status: string
     hasTransactionPin: boolean
+    verificationStatus: string
     createdAt: string
   }>('/v1/developers/me', {
     method: 'PATCH',
-    body: JSON.stringify({ name: input.businessName, company: input.email }), // Note: backend uses 'name' and 'company'
+    body: JSON.stringify({
+      ...(input.businessName !== undefined && { name: input.businessName }),
+      ...(input.company !== undefined && { company: input.company }),
+    }),
+  })
+  return {
+    businessName: raw.name,
+    email: raw.email,
+    phone: input.phone ?? '',
+    company: raw.company,
+    kycStatus: raw.verificationStatus as DeveloperProfile['kycStatus'],
+    verificationStatus: raw.verificationStatus as DeveloperProfile['verificationStatus'],
+    liveEnabled: raw.liveEnabled,
+    hasTransactionPin: raw.hasTransactionPin,
+  }
+}
+
+// POST /v1/developers/me/kyc-documents/upload — multipart file upload
+export async function uploadKycDocumentFile(file: File): Promise<{ documentId: string }> {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request('/v1/developers/me/kyc-documents/upload', {
+    method: 'POST',
+    body: formData,
+    headers: {}, // Let browser set Content-Type with boundary
+  })
+}
+
+// POST /v1/developers/me/kyc-documents — submit document references for KYC review
+export async function submitDeveloperKycDocuments(documentReferences: string[]): Promise<DeveloperProfile> {
+  const raw = await request<{
+    id: string; name: string; email: string; company: string;
+    liveEnabled: boolean; status: string; hasTransactionPin: boolean;
+    verificationStatus: string; createdAt: string
+  }>('/v1/developers/me/kyc-documents', {
+    method: 'POST',
+    body: JSON.stringify({ documentReferences }),
   })
   return {
     businessName: raw.name,
     email: raw.email,
     phone: '',
     company: raw.company,
-    kycStatus: 'APPROVED',
+    kycStatus: raw.verificationStatus as DeveloperProfile['kycStatus'],
+    verificationStatus: raw.verificationStatus as DeveloperProfile['verificationStatus'],
     liveEnabled: raw.liveEnabled,
+    hasTransactionPin: raw.hasTransactionPin,
   }
-}
-
-// Note: uploadKycDocuments still mocked - no backend endpoint
-export async function uploadKycDocuments(): Promise<{ kycStatus: 'PENDING' }> {
-  return mockResolve({ kycStatus: 'PENDING' as const }, 800)
 }
 
 // PUT /v1/developers/me/password

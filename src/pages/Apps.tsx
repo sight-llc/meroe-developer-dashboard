@@ -11,9 +11,10 @@ import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { getApps, createApp, updateApp, deactivateApp } from '@/lib/api'
+import { getApps, createApp, updateApp, deactivateApp, getDeveloperProfile } from '@/lib/api'
+import { envStore } from '@/lib/env-store'
 import { formatDate } from '@/lib/utils'
-import type { App } from '@/types'
+import type { App, DeveloperProfile, Environment } from '@/types'
 
 export default function Apps() {
   const queryClient = useQueryClient()
@@ -21,12 +22,21 @@ export default function Apps() {
     queryKey: ['apps'],
     queryFn: getApps,
   })
+
+  const { data: profile } = useQuery<DeveloperProfile>({
+    queryKey: ['developer-profile'],
+    queryFn: getDeveloperProfile,
+    staleTime: 60_000,
+  })
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<App | null>(null)
   const [deactivateTarget, setDeactivateTarget] = useState<App | null>(null)
 
   const createMutation = useMutation({
-    mutationFn: createApp,
+    mutationFn: (input: { name: string; description: string; environment?: Environment }) => {
+      const headers: Record<string, string> = input.environment === 'live' ? { 'X-Environment': 'live' } : {}
+      return createApp({ name: input.name, description: input.description }, Object.keys(headers).length ? headers : undefined)
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['apps'] })
       toast.success(`"${data.name}" created`)
@@ -115,6 +125,7 @@ export default function Apps() {
       {createOpen && (
         <AppFormModal
           title="Create app"
+          liveEnabled={profile?.liveEnabled ?? false}
           onClose={() => setCreateOpen(false)}
           onSave={async (data) => { createMutation.mutate(data) }}
         />
@@ -125,7 +136,7 @@ export default function Apps() {
           title="Rename app"
           initial={editTarget}
           onClose={() => setEditTarget(null)}
-          onSave={async (data) => { updateMutation.mutate({ id: editTarget.id, ...data }) }}
+          onSave={async (data) => { updateMutation.mutate({ id: editTarget.id, name: data.name, description: data.description }) }}
         />
       )}
 
@@ -143,18 +154,27 @@ export default function Apps() {
   )
 }
 
-function AppFormModal({ title, initial, onClose, onSave }: {
-  title: string; initial?: App; onClose: () => void
-  onSave: (data: { name: string; description: string }) => Promise<void>
+function AppFormModal({ title, initial, liveEnabled, onClose, onSave }: {
+  title: string; initial?: App; liveEnabled?: boolean; onClose: () => void
+  onSave: (data: { name: string; description: string; environment?: Environment }) => Promise<void>
 }) {
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
+  const [environment, setEnvironment] = useState<Environment>(initial?.environment ?? 'sandbox')
   const [saving, setSaving] = useState(false)
 
   async function handleSave() {
     if (!name.trim()) return
     setSaving(true)
-    await onSave({ name: name.trim(), description: description.trim() })
+    const payload: { name: string; description: string; environment?: Environment } = {
+      name: name.trim(),
+      description: description.trim(),
+    }
+    // Only send environment override on create (not edit), and only if different from current global env
+    if (!initial && environment !== envStore.get()) {
+      payload.environment = environment
+    }
+    await onSave(payload)
     setSaving(false)
   }
 
@@ -168,6 +188,37 @@ function AppFormModal({ title, initial, onClose, onSave }: {
         <div className="mt-4 space-y-3.5">
           <div className="space-y-1.5"><Label htmlFor="app-name">Name</Label><Input id="app-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Checkout Engine" autoFocus /></div>
           <div className="space-y-1.5"><Label htmlFor="app-desc">Description</Label><Input id="app-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this app used for?" /></div>
+          {liveEnabled && !initial && (
+            <div className="space-y-1.5">
+              <Label>Environment</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEnvironment('sandbox')}
+                  className={`rounded-sm border px-3 py-2 text-left text-sm ${
+                    environment === 'sandbox'
+                      ? 'border-vault-500 bg-vault-50 font-medium text-vault-700'
+                      : 'border-paper-200 text-ink-600 hover:bg-paper-100'
+                  }`}
+                >
+                  Sandbox
+                  <span className="block text-[11px] font-normal text-ink-600/50">Test with mock payments</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEnvironment('live')}
+                  className={`rounded-sm border px-3 py-2 text-left text-sm ${
+                    environment === 'live'
+                      ? 'border-gold-500 bg-gold-400/10 font-medium text-gold-700'
+                      : 'border-paper-200 text-ink-600 hover:bg-paper-100'
+                  }`}
+                >
+                  Live
+                  <span className="block text-[11px] font-normal text-ink-600/50">Real customer payments</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>

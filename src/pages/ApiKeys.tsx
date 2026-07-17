@@ -12,10 +12,11 @@ import { CopyButton } from '@/components/shared/CopyButton'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { getApiKeys, createApiKey, revokeApiKey, rollApiKey, getApps } from '@/lib/api'
+import { getApiKeys, createApiKey, revokeApiKey, rollApiKey, getApps, getDeveloperProfile } from '@/lib/api'
+import { envStore } from '@/lib/env-store'
 import { activeKeyStore } from '@/lib/active-key-store'
 import { formatDate } from '@/lib/utils'
-import type { ApiKey, ApiKeyCreated, ApiScope, App } from '@/types'
+import type { ApiKey, ApiKeyCreated, ApiScope, App, DeveloperProfile, Environment } from '@/types'
 import { SetActiveKeyModal } from '@/components/shared/SetActiveKeyModal'
 
 // Only the two scopes confirmed working in the backend; others listed but gated
@@ -44,6 +45,12 @@ export default function ApiKeys() {
   const { data: apps } = useQuery<App[]>({
     queryKey: ['apps'],
     queryFn: getApps,
+  })
+
+  const { data: profile } = useQuery<DeveloperProfile>({
+    queryKey: ['developer-profile'],
+    queryFn: getDeveloperProfile,
+    staleTime: 60_000,
   })
 
   const { data: keys, isLoading, error, refetch } = useQuery<ApiKey[]>({
@@ -168,6 +175,7 @@ export default function ApiKeys() {
       {createOpen && (
         <CreateKeyModal
           apps={(apps ?? []).filter((a) => a.status === 'ACTIVE')}
+          liveEnabled={profile?.liveEnabled ?? false}
           onClose={() => setCreateOpen(false)}
           onCreated={(created) => {
             queryClient.invalidateQueries({ queryKey: ['api-keys'] })
@@ -216,9 +224,10 @@ export default function ApiKeys() {
   )
 }
 
-function CreateKeyModal({ apps, onClose, onCreated }: { apps: App[]; onClose: () => void; onCreated: (k: ApiKeyCreated) => void }) {
+function CreateKeyModal({ apps, liveEnabled, onClose, onCreated }: { apps: App[]; liveEnabled?: boolean; onClose: () => void; onCreated: (k: ApiKeyCreated) => void }) {
   const [appId, setAppId] = useState(apps[0]?.id ?? '')
   const [scopes, setScopes] = useState<ApiScope[]>(['customers:read'])
+  const [environment, setEnvironment] = useState<Environment>(envStore.get())
   const [submitting, setSubmitting] = useState(false)
 
   function toggleScope(scope: ApiScope) {
@@ -230,7 +239,8 @@ function CreateKeyModal({ apps, onClose, onCreated }: { apps: App[]; onClose: ()
     setSubmitting(true)
     const tid = toast.loading('Creating key…')
     try {
-      const created = await createApiKey({ appId, scopes })
+      const headers: Record<string, string> = environment !== envStore.get() && environment === 'live' ? { 'X-Environment': 'live' } : {}
+      const created = await createApiKey({ appId, scopes }, Object.keys(headers).length ? headers : undefined)
       toast.success('Key created — copy it now', { id: tid })
       onCreated(created)
     } catch (e) {
@@ -251,6 +261,37 @@ function CreateKeyModal({ apps, onClose, onCreated }: { apps: App[]; onClose: ()
               <SelectContent>{apps.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          {liveEnabled && (
+            <div className="space-y-1.5">
+              <Label>Environment</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEnvironment('sandbox')}
+                  className={`rounded-sm border px-3 py-2 text-left text-sm ${
+                    environment === 'sandbox'
+                      ? 'border-vault-500 bg-vault-50 font-medium text-vault-700'
+                      : 'border-paper-200 text-ink-600 hover:bg-paper-100'
+                  }`}
+                >
+                  Sandbox
+                  <span className="block text-[11px] font-normal text-ink-600/50">nv_test_sk_ prefix</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEnvironment('live')}
+                  className={`rounded-sm border px-3 py-2 text-left text-sm ${
+                    environment === 'live'
+                      ? 'border-gold-500 bg-gold-400/10 font-medium text-gold-700'
+                      : 'border-paper-200 text-ink-600 hover:bg-paper-100'
+                  }`}
+                >
+                  Live
+                  <span className="block text-[11px] font-normal text-ink-600/50">nv_live_sk_ prefix</span>
+                </button>
+              </div>
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label>Scopes</Label>
             <div className="grid max-h-52 grid-cols-1 gap-1.5 overflow-y-auto rounded-sm border border-paper-200 p-2.5">

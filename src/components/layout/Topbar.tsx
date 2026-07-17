@@ -1,19 +1,22 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import { Check, ChevronDown, KeyRound, AlertCircle } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { NAV_ITEMS } from '@/lib/constants'
 import { getDeveloperProfile, getApiKeys } from '@/lib/api'
 import { activeKeyStore } from '@/lib/active-key-store'
-import type { DeveloperProfile, ApiKey } from '@/types'
+import { envStore } from '@/lib/env-store'
+import type { DeveloperProfile, ApiKey, Environment } from '@/types'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { SetActiveKeyModal } from '@/components/shared/SetActiveKeyModal'
 
 export function Topbar() {
   const location = useLocation()
+  const queryClient = useQueryClient()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [setKeyModal, setSetKeyModal] = useState<ApiKey | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const [currentEnv, setCurrentEnv] = useState<Environment>(envStore.get())
 
   const { data: profile } = useQuery<DeveloperProfile>({
     queryKey: ['developer-profile'],
@@ -123,6 +126,34 @@ export function Topbar() {
             </div>
           )}
         </div>
+
+        {/* ── Environment Toggle (sandbox / live) ──────────── */}
+        {profile?.liveEnabled && (
+          <>
+            <div className="h-4 w-px bg-paper-200" />
+            <div className="flex items-center gap-0.5 rounded-sm border border-paper-200 p-0.5">
+              {(['sandbox', 'live'] as Environment[]).map((env) => (
+                <button
+                  key={env}
+                  onClick={() => {
+                    envStore.set(env)
+                    setCurrentEnv(env)
+                    queryClient.clear()
+                  }}
+                  className={`rounded-sm px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                    currentEnv === env
+                      ? env === 'live'
+                        ? 'bg-gold-400/15 text-gold-700'
+                        : 'bg-vault-50 text-vault-700'
+                      : 'text-ink-600/50 hover:text-ink-600/80'
+                  }`}
+                >
+                  {env === 'sandbox' ? 'Sandbox' : 'Live'}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* ── Developer Profile ───────────────────────────── */}
         {profile && (

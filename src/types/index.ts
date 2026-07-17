@@ -285,17 +285,20 @@ export interface OutboundTransfer {
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────
-export type KycStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type KycStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'
+export type KycReviewStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'
 
-// DeveloperResponse { id, name, email, company, liveEnabled, status, createdAt }
-// name maps to businessName for display
+// DeveloperProfileResponse { id, name, email, company, liveEnabled, status, hasTransactionPin, verificationStatus, createdAt }
+// name maps to businessName for display; verificationStatus is the raw backend field
 export interface DeveloperProfile {
   businessName: string
   email: string
   phone: string
   company?: string
   kycStatus: KycStatus
+  verificationStatus: KycReviewStatus
   liveEnabled: boolean
+  hasTransactionPin?: boolean
 }
 
 export interface AuthSession {
