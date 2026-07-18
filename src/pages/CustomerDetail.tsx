@@ -108,8 +108,16 @@ export default function CustomerDetail() {
     setDownloading(format)
     const tid = toast.loading(`Preparing ${format.toUpperCase()} statement…`)
     try {
-      const { url } = await downloadStatement(id, format)
-      toast.success('Statement ready', { id: tid, action: { label: 'Open', onClick: () => window.open(url, '_blank') } })
+      const { blob, filename } = await downloadStatement(id, format)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast.success(`${filename} downloaded`, { id: tid })
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Download failed', { id: tid })
     } finally {

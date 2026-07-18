@@ -48,6 +48,15 @@ export function Topbar() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  // Reset env to sandbox if profile doesn't have live enabled
+  useEffect(() => {
+    if (profile && !profile.liveEnabled && envStore.get() === 'live') {
+      envStore.set('sandbox')
+      setCurrentEnv('sandbox')
+      queryClient.clear()
+    }
+  }, [profile, queryClient])
+
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-paper-200 bg-white px-6">
       <p className="text-sm font-medium text-ink-600/70">{current}</p>

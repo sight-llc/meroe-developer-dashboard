@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { loginDeveloper, logoutDeveloper, refreshSession, registerDeveloper, ApiError } from './api'
 import { tokenStore } from './token-store'
+import { activeKeyStore } from './active-key-store'
+import { envStore } from './env-store'
 import type { AuthSession } from '@/types'
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
@@ -49,6 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           sessionStorage.removeItem(REFRESH_KEY)
           sessionStorage.removeItem(SESSION_KEY)
           tokenStore.clear()
+          activeKeyStore.clear()
+          envStore.set('sandbox')
           setStatus('unauthenticated')
         } else {
           // For other errors (including 5xx), keep user in loading state
@@ -78,6 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem(REFRESH_KEY)
     sessionStorage.removeItem(SESSION_KEY)
     tokenStore.clear()
+    activeKeyStore.clear()
+    envStore.set('sandbox')
     setSession(null)
     setStatus('unauthenticated')
   }

@@ -486,13 +486,26 @@ export async function closeCustomer(id: string): Promise<Customer> {
 }
 
 // GET /v1/customers/{id}/statements — ✅ Available
-export async function downloadStatement(customerId: string, format: 'pdf' | 'csv', from?: string, to?: string): Promise<{ url: string }> {
+export async function downloadStatement(customerId: string, format: 'pdf' | 'csv', from?: string, to?: string): Promise<{ blob: Blob; filename: string }> {
   const params = new URLSearchParams({ format })
   if (from) params.set('from', from)
   if (to) params.set('to', to)
-  // The backend returns a file download, but for simplicity we'll return a URL that can be opened in a new tab
-  // In a real implementation, you'd handle the file download with proper headers
-  return { url: `${API_BASE_URL}/v1/customers/${customerId}/statements?${params.toString()}` }
+
+  const headers: Record<string, string> = {}
+  const activeKey = activeKeyStore.get()
+  if (activeKey) headers['Authorization'] = `Bearer ${activeKey.rawKey}`
+
+  const res = await fetch(`${API_BASE_URL}/v1/customers/${customerId}/statements?${params.toString()}`, { headers })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new ApiError(body?.message ?? `Download failed (${res.status})`, res.status, body?.code ?? null, null)
+  }
+
+  const mime = format === 'pdf' ? 'application/pdf' : 'text/csv'
+  const ext = format === 'pdf' ? 'pdf' : 'csv'
+  const blob = await res.blob()
+  const filename = `statement-${customerId}.${ext}`
+  return { blob: new Blob([blob], { type: mime }), filename }
 }
 
 // ── Webhook Subscriptions ✅ ───────────────────────────────────────────────
